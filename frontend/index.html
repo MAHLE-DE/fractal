@@ -1,32 +1,22 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="dark">
-  <title>Normas Graph</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./css/application.css">
+  <meta name="color-scheme" content="light dark">
+  <title>MAHLE · Standards Workspace</title>
+  <link rel="icon" href="./assets/app.ico">
+  <link rel="stylesheet" href="./css/workspace.css">
 </head>
 <body>
-  <canvas id="graphCanvas"></canvas>
-  <header class="topbar">
-    <div class="brand"><span class="brand-dot"></span>Normas Graph</div>
-    <div class="status" id="status">Inicializando...</div>
-  </header>
-  <aside class="legend">
-    <div><i class="test"></i> TEST</div>
-    <div><i class="material"></i> MATL</div>
-    <div><i class="design"></i> DSGN</div>
-  </aside>
-  <section class="intro">
-    <span>PROTÓTIPO VISUAL 01</span>
-    <h1>Fractal standards tree</h1>
-    <p>Arraste para mover, use a roda do mouse para aplicar zoom e clique nos nós.</p>
-  </section>
-  <div class="tooltip" id="tooltip"></div>
-  <script src="./js/graph/fractal-layout.js"></script>
-  <script src="./js/graph/canvas-renderer.js"></script>
-  <script src="./js/app.js"></script>
+  <div id="app"></div>
+  <div id="tooltip" class="graph-tooltip" hidden></div>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <input id="browser-file" type="file" accept=".pdf,.doc,.docx" hidden>
+  <script src="./js/demo-data.js"></script>
+  <script src="./js/graph/graph-model.js"></script>
+  <script src="./js/graph/organic-layout.js"></script>
+  <script src="./js/graph/workspace-renderer.js"></script>
+  <script src="./js/workspace.js"></script>
 </body>
 </html>

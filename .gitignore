@@ -7,3 +7,11 @@ build/
 *.spec
 .DS_Store
 Thumbs.db
+artifacts/
+**/bin/
+**/obj/
+distribution/*/
+!distribution/0.1.0/
+distribution/0.1.0/*
+!distribution/0.1.0/Fractal-VisualPreview-0.1.0-win-x64.zip
+!distribution/0.1.0/Fractal-VisualPreview-0.1.0-win-x64.zip.sha256
