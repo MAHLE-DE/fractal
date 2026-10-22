@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param([switch]$SmokeTest)
 $ErrorActionPreference = 'Stop'
-$taskPackage = Join-Path $PSScriptRoot 'distribution\0.1.0\Fractal-VisualPreview-0.1.0-win-x64.zip'
+$taskPackage = Join-Path $PSScriptRoot 'distribution\0.2.0\Fractal-Workspace-0.2.0-win-x64.zip'
+$taskConfig = Join-Path $PSScriptRoot 'config\appsettings.json'
+if (!(Test-Path -LiteralPath $taskConfig)) { throw 'Configuracao ausente: config\appsettings.json. Extraia o repositorio completo.' }
 $taskExe = $null
 
 if (Test-Path -LiteralPath $taskPackage) {
@@ -10,8 +12,8 @@ if (Test-Path -LiteralPath $taskPackage) {
     $taskExpected = [regex]::Match((Get-Content -LiteralPath $taskChecksumFile -Raw), '^[A-Fa-f0-9]{64}').Value
     $taskHash = (Get-FileHash -LiteralPath $taskPackage -Algorithm SHA256).Hash
     if ($taskExpected.Length -ne 64 -or $taskHash -ne $taskExpected) { throw 'O pacote esta incompleto ou foi alterado. Baixe novamente o ZIP completo do GitHub.' }
-    $taskCacheBase = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MAHLE\FractalPreview\packages'
-    $taskInstall = Join-Path $taskCacheBase ('0.1.0-' + $taskHash.Substring(0, 16))
+    $taskCacheBase = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MAHLE\FractalWorkspace\packages'
+    $taskInstall = Join-Path $taskCacheBase ('0.2.0-' + $taskHash.Substring(0, 16))
     $taskExe = Join-Path $taskInstall 'Fractal.Preview.exe'
     $taskReady = Join-Path $taskInstall '.complete'
     New-Item -ItemType Directory -Path $taskCacheBase -Force | Out-Null
@@ -20,7 +22,7 @@ if (Test-Path -LiteralPath $taskPackage) {
         try { $taskGate = [IO.File]::Open((Join-Path $taskCacheBase ($taskHash + '.lock')), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None) }
         catch { throw 'Outra abertura esta preparando este pacote. Aguarde alguns segundos e tente novamente.' }
         if (!(Test-Path -LiteralPath $taskReady) -or !(Test-Path -LiteralPath $taskExe)) {
-            Write-Host 'Preparando o prototipo completo. A primeira abertura pode levar alguns segundos...'
+            Write-Host 'Preparando o Fractal Workspace. A primeira abertura pode levar alguns segundos...'
             New-Item -ItemType Directory -Path $taskInstall -Force | Out-Null
             Expand-Archive -LiteralPath $taskPackage -DestinationPath $taskInstall -Force
             foreach ($taskRequired in @('Fractal.Preview.exe','Fractal.Preview.dll','coreclr.dll','WebView2Loader.dll','frontend\index.html','frontend\js\workspace.js')) {
@@ -38,11 +40,11 @@ if (Test-Path -LiteralPath $taskPackage) {
 
 if ($taskExe -and (Test-Path -LiteralPath $taskExe)) {
     if ($SmokeTest) {
-        $taskProcess = Start-Process -FilePath $taskExe -ArgumentList '--smoke-test' -WindowStyle Hidden -PassThru
+        $taskProcess = Start-Process -FilePath $taskExe -ArgumentList @('--smoke-test','--config',('"' + $taskConfig + '"')) -WindowStyle Hidden -PassThru
         if (!$taskProcess.WaitForExit(30000)) { $taskProcess.Kill(); throw 'O teste de inicializacao WebView2 excedeu o limite.' }
         $taskProcess.Refresh()
         if ($taskProcess.ExitCode -ne 0) { throw "Falha ao iniciar o prototipo WebView2: $($taskProcess.ExitCode)" }
         Write-Output "PASS prototipo distribuido e WebView2: $taskExe"
-    } else { Start-Process -FilePath $taskExe }
+    } else { Start-Process -FilePath $taskExe -ArgumentList @('--config',('"' + $taskConfig + '"')) -WindowStyle Hidden }
 } elseif ($SmokeTest) { throw 'O pacote executavel nao foi encontrado.' }
 else { Start-Process -FilePath (Join-Path $PSScriptRoot 'frontend\index.html') }

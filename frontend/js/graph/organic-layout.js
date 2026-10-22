@@ -3,7 +3,7 @@ window.FractalLayout = class FractalLayout {
   flatten(node, output = []) { output.push(node); node.children.forEach(n => this.flatten(n, output)); return output; }
   build(root) {
     root.x = 0; root.y = 0; root.r = 47; root.direction = -Math.PI / 2;
-    const corridors = { test: [-2.95, -1.99], material: [-1.99, -1.15], design: [-1.15, -.19] };
+    const corridors = { test: [-2.95, -1.99], material: [-1.99, -1.15], design: [-1.15, -.19], measurement: [-3.05, -2.45], manufacturing: [-.65, -.09] };
     const count = {}, leaves = n => n.children.length ? n.children.reduce((sum, c) => sum + leaves(c), 0) : 1;
     for (const node of this.flatten(root)) { const key = node.family + node.depth; count[key] = (count[key] || 0) + 1; }
     const place = (node, start, end, inherited) => {
@@ -23,8 +23,14 @@ window.FractalLayout = class FractalLayout {
       for (const child of order) { const width = (end - start) * leaves(child) / total; place(child, cursor, cursor + width, angle); cursor += width; }
     };
     for (const family of Object.keys(corridors)) {
-      const entries = root.children.filter(n => n.family === family && !n.island), [start, end] = corridors[family];
+      const entries = root.children.filter(n => n.family === family && !n.island && !n.disconnected), [start, end] = corridors[family];
       entries.forEach((entry, i) => place(entry, start + (end - start) * i / entries.length, start + (end - start) * (i + 1) / entries.length, (start + end) / 2));
+      // Unlinked standards occupy a quiet outer canopy, never a dense ring at the trunk.
+      const floating = root.children.filter(n => n.family === family && n.disconnected && !n.island);
+      floating.forEach((node, i) => {
+        const slots = Math.max(3, Math.min(8, floating.length)), row = Math.floor(i / slots), angle = start + (end - start) * ((i % slots + .5 + (row % 2) * .24) / slots), distance = 310 + row * 76;
+        node.x = Math.cos(angle) * distance; node.y = Math.sin(angle) * distance; node.r = 27; node.direction = angle; node.anchorX = node.x; node.anchorY = node.y;
+      });
     }
     for (const family of ['measurement', 'manufacturing']) {
       const entries = root.children.filter(n => n.island && n.family === family), side = family === 'measurement' ? -1 : 1;
@@ -33,15 +39,20 @@ window.FractalLayout = class FractalLayout {
     const nodes = this.flatten(root);
     for (let step = 0; step < 180; step++) {
       let collisions = 0;
-      for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i], b = nodes[j], dx = b.x - a.x, dy = b.y - a.y, distance = Math.hypot(dx, dy), required = a.r + b.r + 7;
-        if (distance >= required - .01) continue;
-        collisions++;
-        const angle = distance < .001 ? (i + j) * 2.39996 : Math.atan2(dy, dx), force = (required - distance) * .52;
-        const mobility = n => n === root ? 0 : n.island ? .05 : (1 + n.depth * .15) / n.strength;
-        const ma = mobility(a), mb = mobility(b), sum = ma + mb || 1;
-        a.x -= Math.cos(angle) * force * ma / sum; a.y -= Math.sin(angle) * force * ma / sum;
-        b.x += Math.cos(angle) * force * mb / sum; b.y += Math.sin(angle) * force * mb / sum;
+      const grid = new Map(), cell = 104;
+      for (let i = 0; i < nodes.length; i++) {
+        const b = nodes[i], gx = Math.floor(b.x / cell), gy = Math.floor(b.y / cell);
+        for (let x = gx - 1; x <= gx + 1; x++) for (let y = gy - 1; y <= gy + 1; y++) for (const j of grid.get(x + ':' + y) || []) {
+          const a = nodes[j], dx = b.x - a.x, dy = b.y - a.y, distance = Math.hypot(dx, dy), required = a.r + b.r + 7;
+          if (distance >= required - .01) continue;
+          collisions++;
+          const angle = distance < .001 ? (i + j) * 2.39996 : Math.atan2(dy, dx), force = (required - distance) * .52;
+          const mobility = n => n === root ? 0 : n.island ? .05 : (1 + n.depth * .15) / n.strength;
+          const ma = mobility(a), mb = mobility(b), sum = ma + mb || 1;
+          a.x -= Math.cos(angle) * force * ma / sum; a.y -= Math.sin(angle) * force * ma / sum;
+          b.x += Math.cos(angle) * force * mb / sum; b.y += Math.sin(angle) * force * mb / sum;
+        }
+        const key = gx + ':' + gy; if (!grid.has(key)) grid.set(key, []); grid.get(key).push(i);
       }
       if (step < 65) for (const node of nodes) { if (node === root || node.island) continue; node.x += (node.anchorX - node.x) * .008; node.y += (node.anchorY - node.y) * .008; }
       if (!collisions && step > 65) break;

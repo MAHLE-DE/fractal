@@ -1,47 +1,37 @@
-# Standards Workspace — prévia visual 0.1.0
+# Arquitetura — Fractal Workspace 0.2.0
 
-## Objetivo deste marco
+A prévia 0.1.0 era somente visual. A 0.2.0 preserva a aparência e separa interface, domínio persistente e hospedeiro Windows.
 
-Validar primeiro a apresentação completa: árvore, navegação, painéis, pesquisa, catálogo, produtos e formulários. Não é uma versão de produção, nem uma implementação de concorrência.
+- `frontend/`: HTML/CSS/JS sem Node em execução; Canvas 2D, pesquisa, formulários e seletores próprios. Abrir index.html diretamente usa demonstração em memória.
+- `frontend/js/graph/graph-model.js`: grafo lógico → instâncias por caminho, cobertura mínima por componentes fortemente conexos, ciclos terminais e normas isoladas flutuantes.
+- `organic-layout.js`: posições calculadas, setores, copa fractal e separação de células. Não grava coordenadas no banco.
+- `workspace-renderer.js`: câmera, desenho, seleção e realce das aparições relacionadas a ilhas.
+- `core/`: biblioteca .NET sem dependências de UI, leitura/validação, revisão/fingerprint e transações JSON. Pode ser integrada ao backend do app MAHLE.
+- `desktop/`: WinForms/WebView2, ponte de mensagens restrita à origem local, seletor Windows, abertura de documentos/links registrados e entrega de imagens do banco.
+- `config/appsettings.json`: instalação, modo e pasta de dados.
+- `tests/`: regressões de grafo, dados e interface.
+- `distribution/`: pacotes gerados; não é banco operacional.
 
-- Grafo escuro, como uma constelação técnica, sem brilho neon.
-- Interface, formulários e identidade visual próximos do MAHLE BU2 Workspace.
-- Normas e relações inteiramente fictícias, com UUIDs demonstrativos estáveis.
-- Referências internacionais, repetições por caminho e retorno de ciclo.
-- Ilhas MEAS/MNFG sem linhas para a raiz ou para cópias dentro da árvore.
-- Seleção, caminho ancestral, filhos imediatos, zoom no cursor, arraste e reenquadramento.
-- Cadastros e alterações podem ser simulados na memória da sessão; recarregar/fechar restaura os dados fictícios.
-- Os arquivos em `data/` permanecem intocados. Não há gravação em rede, abertura de documentos fictícios, importação de normas nem alteração do app MAHLE.
+## Concorrência e durabilidade
 
-## Executar
+Um FileStream com FileShare.None em `.write.lock` serializa operações curtas para escritores cooperativos. A edição de um formulário não mantém o banco bloqueado.
 
-Abra `frontend/index.html` diretamente no Edge, ou o executável `Fractal.Preview.exe` do pacote gerado. O HTML funciona offline sem servidor, Node ou Python. O executável inclui .NET e precisa apenas do WebView2 Runtime. Extraia o pacote inteiro, não somente o EXE.
+Cadastros possuem fingerprint SHA-256; ligações e grupos têm fingerprint por registro. O cliente envia a revisão lida; conflito impede sobrescrita, inclusive após edição externa que não mudou o número de revisão. Adições de relações diferentes são mescladas sobre o arquivo mais recente sob lock.
 
-O seletor de documentos no executável é nativo do Windows. No navegador, usa-se o seletor do navegador, que não fornece o caminho completo por segurança. Nenhum dos modos copia o documento ou grava seu cadastro.
+Uma transação prepara arquivos novos e cópias anteriores, manifesta os hashes, grava marcador de commit durável, aplica substituições de arquivo e marca conclusão. Antes de ler, uma transação confirmada e incompleta é concluída. Se um arquivo foi alterado externamente de forma incompatível com uma recuperação pendente, a recuperação recusa sobrescrever. As cópias concluídas são movidas para backups/.
 
-## Separação para integração futura
+Isso fornece recuperação coordenada entre arquivos, não atomicidade de pasta garantida para leitores externos que ignoram o protocolo. Toda edição direta deve usar manutenção e todo leitor externo deve evitar arquivos durante gravações. Garantias de flush, exclusão e rename dependem do sistema de arquivos/servidor; validar SMB real é obrigatório.
 
-1. `demo-data.js`: fixtures isoladas; não são o banco real.
-2. `graph-model.js`: cadastro lógico → instâncias por caminho, com interrupção de ciclos.
-3. `organic-layout.js`: geometria transitória, sem persistência de coordenadas.
-4. `workspace-renderer.js`: câmera e desenho no Canvas 2D.
-5. `workspace.js`: apresentação e estado da sessão.
-6. `desktop/`: hospedeiro C#/WebView2 mínimo, com API controlada somente para escolher documento.
+## Cobertura mínima
 
-O frontend não depende de Python. O hospedeiro pywebview e o código visual MVP antigo foram retirados dos arquivos atuais durante a preparação do pacote comercial; permanecem no histórico do Git. O repositório distribui somente o protótipo visual atual e seu código-fonte de manutenção.
+Para o subgrupo, entram normas aplicáveis, normas gerais e referências de entrada legadas; depois se inclui o fechamento por citações. A decomposição de Tarjan condensa ciclos. Cada componente sem entrada de outro componente precisa de um ponto inicial. Escolher um representante de cada um é um mínimo exato de cobertura por alcance.
 
-O contrato funcional continua sendo a referência. A seção 18, que fixava Python, é substituída nesta direção técnica pela autorização do usuário para C#/WebView2; não há modificação das regras de identidade, relações ou arquivos.
+Dentro de um ciclo, prioriza-se quem tem mais citações diretas; empate por código/UUID, de forma determinística. Normas completamente isoladas são flutuantes sem aresta para o produto. O número mínimo não pode ser reduzido criando citações artificiais. MEAS/MNFG conservam ilhas próprias e cópias quando citadas em galhos.
 
-## Próxima fase: várias pessoas editando simultaneamente
+A expansão por caminho termina nos ciclos. Depois do orçamento de repetições, caminhos já expandidos deixam de ser repetidos recursivamente; primeiras ocorrências continuam sendo expandidas para preservar a cobertura única. Filtros do usuário são uma ocultação intencional e a lista de conexões continua integral.
 
-O requisito é edição simultânea, não bloqueio exclusivo do aplicativo inteiro. A implementação futura deve oferecer:
+## Escopo de validação
 
-- banco isolado de normas, com `dataRoot` configurável para teste local e posterior UNC;
-- `revision`/ETag por registro e conferência da revisão lida antes de salvar;
-- exclusão mútua breve apenas no commit dos registros/índices afetados, liberada mesmo em falha;
-- escrita temporária + substituição atômica e manifesto de transação para alterações entre múltiplos JSONs;
-- rejeição de sobrescrita silenciosa: conflito apresenta valores locais/remotos e permite recarregar ou resolver;
-- UUIDs permanentes, índices reconstruíveis e validação de referências;
-- backup, recuperação e testes reais com múltiplos processos e pasta SMB.
+Testes de processos concorrentes em disco local, recuperação interrompida, referências, JSON inválido, ETags e interface integrada com o repositório real. O transporte automatizado de UI simula seleção de arquivo e abertura de programas; smoke test valida a inicialização nativa WebView2. Nenhum teste automatizado usa a rede corporativa ou o banco de auditorias.
 
-Esse protocolo ainda não foi implementado ou validado. Não usar os formulários desta prévia como cadastro operacional. Cadastro completo, taxonomia, validações, persistência e concorrência serão construídos depois da aprovação visual.
+Sem login, servidor, Firebase, serviço Python ou Node em produção. Permissões do compartilhamento ficam sob a política Windows da empresa. Todas as pessoas com acesso ao app podem editar e ativar a manutenção.

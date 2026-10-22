@@ -26,7 +26,7 @@ window.CanvasRenderer = class CanvasRenderer {
       if (node?.standard) {
         this.tooltip.hidden = false; this.tooltip.replaceChildren();
         const code = document.createElement('strong'), title = document.createElement('span'), hint = document.createElement('small');
-        code.textContent = node.label; title.textContent = node.standard.identification.title; hint.textContent = node.cycle ? 'Return reference · expansion stops here' : node.island ? 'Independent peripheral reference' : 'Level ' + node.depth + ' · connection strength ' + node.strength;
+        code.textContent = node.label; title.textContent = node.standard.identification.title; hint.textContent = node.cycle ? 'Return reference · expansion stops here' : node.disconnected ? 'Unlinked standard · no citations in this tree' : node.collapsedReference ? 'Repeated path · full connections available in details' : node.island ? 'Independent peripheral reference' : 'Level ' + node.depth + ' · connection strength ' + node.strength;
         this.tooltip.append(code, title, hint);
         this.tooltip.style.left = Math.min(e.clientX + 18, innerWidth - 310) + 'px'; this.tooltip.style.top = Math.min(e.clientY + 18, innerHeight - 130) + 'px';
       } else this.tooltip.hidden = true;
@@ -53,7 +53,12 @@ window.CanvasRenderer = class CanvasRenderer {
   }
   invalidate() { if (this.frameId === null) this.frameId = requestAnimationFrame(time => { this.frameId = null; this.render(time); }); }
   start() { this.invalidate(); }
-  color(node) { return window.FractalDemo.categories[node.family]?.color || '#d7e3f2'; }
+  color(node) {
+    const ownFamily = node.standard?.classification.internal_category, color = window.FractalDemo.categories[['measurement', 'manufacturing'].includes(ownFamily) ? ownFamily : node.family]?.color || '#d7e3f2';
+    if (!node.disconnected) return color;
+    const rgb = color.slice(1).match(/../g).map(v => parseInt(v, 16));
+    return '#' + rgb.map((v, i) => Math.round(v * .7 + [157, 175, 195][i] * .3).toString(16).padStart(2, '0')).join('');
+  }
   render(time = performance.now()) {
     if (!this.width || !this.height) return;
     if (this.motion) { const t = Math.min(1, (time - this.motion.started) / 420), eased = 1 - Math.pow(1 - t, 3); for (const k of ['scale', 'tx', 'ty']) this[k] = this.motion.from[k] + (this.motion.to[k] - this.motion.from[k]) * eased; if (t === 1) this.motion = null; }
@@ -63,10 +68,12 @@ window.CanvasRenderer = class CanvasRenderer {
     for (let i = 0; i < 95; i++) { const x = ((i * 137.508) % 997) / 997 * this.width, y = ((i * 73.117) % 991) / 991 * this.height; c.fillStyle = i % 7 ? '#9cb7d315' : '#acc7e032'; c.beginPath(); c.arc(x, y, i % 7 ? .65 : 1, 0, Math.PI * 2); c.fill(); }
     if (this.root) {
       c.save(); c.translate(this.tx, this.ty); c.scale(this.scale, this.scale);
-      const path = new Set(); for (let p = this.selected; p; p = p.parent) path.add(p.id);
-      const edges = this.nodes.filter(n => n.parent && !n.island).sort((a, b) => a.strength - b.strength);
+      const matches = this.selected?.island ? this.nodes.filter(n => !n.island && n.standard_id === this.selected.standard_id) : this.selected ? [this.selected] : [];
+      const path = new Set(); for (const match of matches) for (let p = match; p; p = p.parent) path.add(p.id);
+      this.relatedSelections = new Set(matches);
+      const edges = this.nodes.filter(n => n.parent && !n.island && !n.floating).sort((a, b) => a.strength - b.strength);
       for (const node of edges) {
-        const parent = node.parent, active = this.selected && (parent === this.selected || path.has(node.id)), muted = this.selected && !active;
+        const parent = node.parent, active = this.selected && (parent === this.selected || this.relatedSelections.has(parent) || path.has(node.id)), muted = this.selected && !active;
         const width = active ? 1.9 : node.strength === 3 ? 1.65 : node.strength === 2 ? 1.15 : .7;
         const d = Math.hypot(node.x - parent.x, node.y - parent.y), out = parent.depth === 0 ? node.direction : parent.direction;
         const edge = () => { c.beginPath(); c.moveTo(parent.x, parent.y); c.bezierCurveTo(parent.x + Math.cos(out) * d * .36, parent.y + Math.sin(out) * d * .36, node.x - Math.cos(node.direction) * d * .33, node.y - Math.sin(node.direction) * d * .33, node.x, node.y); };
@@ -79,21 +86,21 @@ window.CanvasRenderer = class CanvasRenderer {
         const group = this.nodes.filter(n => n.island && n.family === family); if (!group.length) continue;
         const minX = Math.min(...group.map(n => n.x - n.r)) - 20, minY = Math.min(...group.map(n => n.y - n.r)) - 35, maxX = Math.max(...group.map(n => n.x + n.r)) + 20, maxY = Math.max(...group.map(n => n.y + n.r)) + 18;
         c.strokeStyle = '#6c809b38'; c.lineWidth = 1 / this.scale; c.setLineDash([3 / this.scale, 5 / this.scale]); c.beginPath(); c.roundRect(minX, minY, maxX - minX, maxY - minY, 14); c.stroke(); c.setLineDash([]);
-        c.font = '500 9px Segoe UI'; c.fillStyle = '#899bb3'; c.textAlign = 'left'; c.fillText(title, minX + 12, minY + 15);
+        c.font = '500 11px Segoe UI'; c.fillStyle = '#b0c2d6'; c.textAlign = 'left'; c.fillText(title, minX + 12, minY + 15);
       }
       c.restore();
     }
     this.callbacks.camera?.(Math.round(this.scale * 100)); if (this.motion) this.invalidate();
   }
   drawNode(node, path) {
-    const c = this.ctx, selected = node === this.selected, child = !!this.selected && node.parent === this.selected, root = !node.standard_id, hovered = node === this.hover, faded = this.selected && !selected && !child && !path.has(node.id);
+    const c = this.ctx, selected = node === this.selected || this.relatedSelections?.has(node), child = !!this.selected && (node.parent === this.selected || this.relatedSelections?.has(node.parent)), root = !node.standard_id, hovered = node === this.hover, faded = this.selected && !selected && !child && !path.has(node.id);
     c.globalAlpha = faded ? .48 : 1; const r = node.r; c.beginPath(); c.arc(node.x, node.y, r, 0, Math.PI * 2);
     c.fillStyle = root ? '#e4edf7' : '#122338'; c.fill(); c.strokeStyle = selected ? '#fff' : this.color(node); c.lineWidth = root ? 2 : selected ? 2.3 : node.depth === 1 ? 1.7 : 1.1; c.stroke();
     if (hovered || selected) { c.strokeStyle = selected ? '#ffffff45' : '#ffffff22'; c.lineWidth = 4; c.beginPath(); c.arc(node.x, node.y, r + 3, 0, Math.PI * 2); c.stroke(); }
     if (child) { c.strokeStyle = '#d8bc7b'; c.lineWidth = 1.8; c.beginPath(); c.arc(node.x, node.y, r + 4, 0, Math.PI * 2); c.stroke(); }
     if (node.cycle) { c.fillStyle = '#d7b66e'; c.beginPath(); c.arc(node.x + r * .7, node.y - r * .7, 3.2, 0, Math.PI * 2); c.fill(); }
     if (node.standard?.classification.origin === 'international') { c.strokeStyle = this.color(node); c.lineWidth = .6; c.beginPath(); c.arc(node.x, node.y, r - 3, 0, Math.PI * 2); c.stroke(); }
-    let fs = root ? 10 : Math.min(9, r * .40); const labels = root ? node.product.name.replace(' elements', '\nelements').replace(' modules', '\nmodules').replace(' separators', '\nseparators').split('\n') : [node.label];
+    let fs = root ? 11 : Math.min(11, r * .45); const labels = root ? node.product.name.replace(' elements', '\nelements').replace(' modules', '\nmodules').replace(' separators', '\nseparators').split('\n') : [node.label];
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = root ? '#183653' : '#e8eef7';
     for (let i = 0; i < labels.length; i++) { let size = fs; c.font = '600 ' + size + 'px Segoe UI'; while (c.measureText(labels[i]).width > r * 1.73 && size > 3) { size -= .3; c.font = '600 ' + size + 'px Segoe UI'; } c.fillText(labels[i], node.x, node.y + (i - (labels.length - 1) / 2) * 13, r * 1.76); }
     c.globalAlpha = 1;

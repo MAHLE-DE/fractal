@@ -19,7 +19,7 @@
   function create() {
     let serial = 1, relationSerial = 5000;
     const standards = [], relations = [], entries = [], familyRoots = {};
-    const products = [
+    const subgroups = [
       { id: 'PRODUCT-OIL-FILTER', name: 'Oil filter elements', group: 'Fluid Systems Liquid', subgroup: 'Oil filtration', description: 'Engineering references for oil filtration, sealing and product validation.', code: 'OFE' },
       { id: 'PRODUCT-FUEL-FILTER', name: 'Fuel filter modules', group: 'Fluid Systems Liquid', subgroup: 'Fuel filtration', description: 'Fuel filtration assemblies and their engineering dependencies.', code: 'FFM' },
       { id: 'PRODUCT-AIR-FILTER', name: 'Air filter elements', group: 'Fluid Systems Air', subgroup: 'Air filtration', description: 'Air filtration media, housings and performance requirements.', code: 'AFE' },
@@ -65,11 +65,14 @@
     link(byCode('TEST-060'), international[2], 2); link(byCode('DSGN-376'), mnfg[0], 1);
     link(byCode('DSGN-384'), byCode('TEST-057'), 2);
     link(byCode('MATL-140'), byCode('MATL-124'), 1);
-    for (const product of products) {
-      ['test', 'material', 'design'].forEach((category, i) => entries.push({ id: uuid(relationSerial++), product_id: product.id, standard_id: familyRoots[category].id, placement: 'radial_branch', branch: category, strength_level: 3, display_order: i + 1 }));
-      [...meas, ...mnfg].forEach((standard, i) => entries.push({ id: uuid(relationSerial++), product_id: product.id, standard_id: standard.id, placement: 'island', island: standard.classification.internal_category, strength_level: i % 3 + 1, display_order: i + 1 }));
+    for (const product of subgroups) {
+      ['test', 'material', 'design'].forEach((category, i) => entries.push({ id: uuid(relationSerial++), subgroup_id: product.id, standard_id: familyRoots[category].id, placement: 'radial_branch', branch: category, strength_level: 3, display_order: i + 1 }));
+      [...meas, ...mnfg].forEach((standard, i) => entries.push({ id: uuid(relationSerial++), subgroup_id: product.id, standard_id: standard.id, placement: 'island', island: standard.classification.internal_category, strength_level: i % 3 + 1, display_order: i + 1 }));
     }
-    return { schema_version: '1.0', preview_only: true, products, standards, relations: { schema_version: '1.0', product_standard_relations: entries, standard_standard_relations: relations }, taxonomy: { product_groups: [{ id: 'FLUID-SYSTEMS-LIQUID', name: 'Fluid Systems Liquid' }, { id: 'FLUID-SYSTEMS-AIR', name: 'Fluid Systems Air' }], product_subgroups: [{ id: 'OIL-FILTRATION', name: 'Oil filtration' }, { id: 'FUEL-FILTRATION', name: 'Fuel filtration' }, { id: 'AIR-FILTRATION', name: 'Air filtration' }] } };
+    subgroups.forEach((s, i) => { s.id = uuid(8000 + i); s.product_group_ids = [i < 2 ? 'FLUID-SYSTEMS-LIQUID' : 'FLUID-SYSTEMS-AIR']; s.image_path = ''; });
+    entries.forEach((r, i) => r.subgroup_id = subgroups[Math.floor(i / 9)].id);
+    standards.forEach(s => { s.applicability.product_subgroup_ids = subgroups.slice(0, 2).map(g => g.id); s.applicability.is_general = s.identification.document_no === 'ISO 9227'; s.tree_entry = { family: s.classification.internal_category || 'test', strength_level: 3 }; });
+    return { schema_version: '2.0', preview_only: true, subgroups, standards, relations: { schema_version: '2.0', subgroup_standard_relations: entries, standard_standard_relations: relations }, taxonomy: { product_groups: [{ id: 'FLUID-SYSTEMS-LIQUID', name: 'Fluid Systems Liquid' }, { id: 'FLUID-SYSTEMS-AIR', name: 'Fluid Systems Air' }] } };
   }
   window.FractalDemo = { create, categories };
 })();
