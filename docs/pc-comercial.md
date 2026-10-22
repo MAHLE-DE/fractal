@@ -1,8 +1,8 @@
-# Fractal 0.2.0 no PC comercial
+# Fractal 0.2.1 no PC comercial
 
 ## Execução
 
-Extraia o repositório inteiro e abra **Abrir Fractal.cmd**. Se scripts forem bloqueados pela política da empresa, extraia `distribution/0.2.0/Fractal-Workspace-0.2.0-win-x64.zip` por inteiro e execute `Fractal.Preview.exe`.
+Extraia o repositório inteiro e abra **Abrir Fractal.cmd**. Se scripts forem bloqueados pela política da empresa, extraia `distribution/0.2.1/Fractal-Workspace-0.2.1-win-x64.zip` por inteiro e execute `Fractal.Preview.exe`.
 
 Windows x64 + WebView2 Runtime. Não precisa .NET SDK, Python ou Node. O pacote inclui seu próprio runtime .NET. Não é assinado digitalmente; se necessário, solicite liberação à TI sem desativar proteções corporativas.
 
@@ -22,7 +22,7 @@ A tela Settings mostra o caminho efetivamente usado e oferece **Open data folder
 ## Primeiros passos
 
 1. Em Product subgroups, crie subgrupos com nome, descrição e grupo.
-2. Clique em Photo para selecionar JPG/PNG; recomendação visual 16:9, por exemplo 1280×720. Outras proporções são recortadas no quadro.
+2. Clique na área inteira da foto/placeholder para selecionar JPG/PNG. O quadro tem proporção 4:3; por exemplo, 1200×900 ou 1600×1200. Outras proporções são recortadas no quadro. Não há botão sobreposto à foto.
 3. Em New standard, selecione subgrupos ou General standard, informe código/revisão/título e o arquivo real da norma. Internacionais podem não ter arquivo.
 4. Cadastre também o link online opcional. Nos detalhes, arquivo e link têm botões separados.
 5. Em Connections, informe a norma de origem que cita e a norma referenciada. O app escolhe entradas da árvore automaticamente.

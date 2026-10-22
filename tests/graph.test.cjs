@@ -72,3 +72,56 @@ test('Dense DAGs limit repeated expansion but retain complete unique coverage', 
   assert.equal(new Set(nodes.filter(n=>n.standard_id).map(n=>n.standard_id)).size, 70);
   assert.ok(nodes.some(n=>n.collapsedReference)); assert.ok(nodes.length < 5000);
 });
+test('A MATL → TEST citation preserves both native trees and adds a cross-family appearance', () => {
+  const data = dataset([standard('TEST-A','test'), standard('MATL-A','material')], []);
+  assert.ok(new GraphModel(data).expand('p').children.every(n => n.floating));
+  data.relations.standard_standard_relations.push({id:'cross',source_standard_id:'MATL-A',target_standard_id:'TEST-A',strength_level:3});
+  const graph = new GraphModel(data), root = graph.expand('p'), material = root.children.find(n => n.family === 'material'), testEntry = root.children.find(n => n.family === 'test');
+  assert.ok(material && testEntry); assert.equal(material.standard_id,'MATL-A'); assert.equal(testEntry.standard_id,'TEST-A');
+  assert.ok(!material.floating && !testEntry.floating);
+  assert.equal(material.children[0].standard_id,'TEST-A'); assert.equal(material.children[0].family,'material');
+  assert.equal(root.coverage.minimumEntries,2);
+  const onlyTest = flatten(graph.expand('p',{families:['test'],islands:false}));
+  assert.ok(onlyTest.some(n=>n.standard_id==='TEST-A')); assert.ok(!onlyTest.some(n=>n.standard_id==='MATL-A'));
+});
+test('Cycles spanning all three families never collapse the three native sectors into one', () => {
+  const data = dataset([standard('T','test'),standard('M','material'),standard('D','design')],[['T','M'],['M','D'],['D','T']]), root = new GraphModel(data).expand('p');
+  assert.deepEqual(Array.from(root.children.map(n=>n.family)),['test','material','design']);
+  assert.equal(root.children.length,3);
+  for(const family of ['test','material','design']) {
+    const sector = root.children.find(n=>n.family===family), nodes = flatten(sector);
+    assert.equal(new Set(nodes.map(n=>n.standard_id)).size,3); assert.ok(nodes.some(n=>n.cycle));
+  }
+});
+test('Entries are still minimal within each family, including indirect paths through a different family', () => {
+  const data = dataset([standard('T1','test'),standard('T2','test'),standard('M','material'),standard('D','design')],[['T1','M'],['M','T2'],['M','D']]), graph = new GraphModel(data), root = graph.expand('p');
+  assert.deepEqual(Array.from(root.children.filter(n=>n.family==='test').map(n=>n.standard_id)),['T1']);
+  assert.equal(root.children.filter(n=>n.family==='material').length,1); assert.equal(root.children.filter(n=>n.family==='design').length,1);
+  const testSector = root.children.find(n=>n.family==='test'); assert.ok(flatten(testSector).some(n=>n.standard_id==='T2'));
+  assert.equal(root.coverage.families.test.standards,2); assert.equal(root.coverage.families.test.entries,1);
+});
+test('Dense cross-family references retain coverage independently in every family', () => {
+  const standards = Array.from({length:60},(_,i)=>standard('N'+i,['test','material','design'][i%3])), edges=[];
+  for(let i=0;i<58;i++){edges.push(['N'+i,'N'+(i+1)]);edges.push(['N'+i,'N'+(i+2)]);}
+  const root = new GraphModel(dataset(standards,edges)).expand('p');
+  for(const family of ['test','material','design']) {
+    const ids = new Set(root.children.filter(n=>n.family===family).flatMap(flatten).map(n=>n.standard_id));
+    for(const record of standards.filter(s=>s.tree_entry.family===family)) assert.ok(ids.has(record.id),family+' lost '+record.id);
+  }
+});
+test('Per-family entry count agrees with exhaustive minimum coverage on small mixed graphs', () => {
+  let random = 4271; const next = () => (random = (random * 1664525 + 1013904223) >>> 0) / 4294967296;
+  for(let sample=0;sample<40;sample++) {
+    const standards = Array.from({length:6},(_,i)=>standard('R'+i,['test','material','design'][i%3])), edges=[];
+    for(let i=0;i<6;i++) for(let j=0;j<6;j++) if(i!==j && next()<.23) edges.push(['R'+i,'R'+j]);
+    const graph = new GraphModel(dataset(standards,edges)), entries = graph.entries('p').roots;
+    const reach = seeds => {const seen=new Set(),queue=seeds.slice();while(queue.length){const id=queue.pop();if(seen.has(id))continue;seen.add(id);queue.push(...(graph.outgoing.get(id)||[]).map(r=>r.target_standard_id));}return seen;};
+    for(const family of ['test','material','design']) {
+      const required=standards.filter(s=>s.tree_entry.family===family).map(s=>s.id), chosen=entries.filter(r=>r.family===family).map(r=>r.standard_id);
+      assert.ok(required.every(id=>reach(chosen).has(id)));
+      let minimum=required.length;
+      for(let mask=0;mask<(1<<required.length);mask++) {const seeds=required.filter((_,i)=>mask&(1<<i));if(required.every(id=>reach(seeds).has(id)))minimum=Math.min(minimum,seeds.length);}
+      assert.equal(chosen.length,minimum, family+' sample '+sample);
+    }
+  }
+});

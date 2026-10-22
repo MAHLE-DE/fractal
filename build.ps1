@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([ValidateSet('win-x64','win-x86','win-arm64')][string]$Runtime = "win-x64", [ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = "0.2.0")
+param([ValidateSet('win-x64','win-x86','win-arm64')][string]$Runtime = "win-x64", [ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = "0.2.1")
 $ErrorActionPreference = "Stop"
 $taskRoot = $PSScriptRoot
 $taskBundledSdk = Join-Path $taskRoot "..\_app\.tools\dotnet\dotnet.exe"

@@ -125,7 +125,7 @@ Esse exemplo de relação só valida se **as duas normas já existirem**. `sourc
 
 Para IA, entregue a lista `{id, document_no, title}` extraída de todos os arquivos standards/ e peça somente ligações entre esses UUIDs. Antes de gravar, confira os códigos associados para evitar citações inventadas. O validador confirma estrutura e referências existentes, não se o texto técnico realmente cita outra norma.
 
-`subgroup_standard_relations` é compatibilidade para vínculos explícitos de entrada antigos. Em novos cadastros, mantenha `[]`: aplicabilidade + citações já determinam a cobertura mínima. Um vínculo antigo também adiciona a norma ao contexto do subgrupo, mas **não obriga** que ela fique no primeiro nível quando uma citação a cobre. Seu setor/peso pode servir de indicação para o representante escolhido. Não use esse array para incluir todas as normas na raiz.
+`subgroup_standard_relations` é compatibilidade para vínculos explícitos de entrada antigos. Em novos cadastros, mantenha `[]`: aplicabilidade + citações já determinam a cobertura mínima **dentro de cada família**. Um vínculo antigo também adiciona a norma ao contexto do subgrupo, mas **não obriga** que ela fique no primeiro nível quando outra entrada da mesma família a cobre. O peso pode servir de indicação para o representante escolhido; o setor nativo de uma norma interna vem de `classification.internal_category` (internacionais usam `tree_entry.family`). Uma citação cruzada cria uma aparição adicional sem remover a nativa. Não use esse array para incluir todas as normas na raiz.
 
 ## Arquivos técnicos e restauração
 

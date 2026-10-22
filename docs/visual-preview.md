@@ -1,9 +1,9 @@
-# Arquitetura — Fractal Workspace 0.2.0
+# Arquitetura — Fractal Workspace 0.2.1
 
-A prévia 0.1.0 era somente visual. A 0.2.0 preserva a aparência e separa interface, domínio persistente e hospedeiro Windows.
+A prévia 0.1.0 era somente visual. A 0.2.1 preserva a aparência e separa interface, domínio persistente e hospedeiro Windows.
 
 - `frontend/`: HTML/CSS/JS sem Node em execução; Canvas 2D, pesquisa, formulários e seletores próprios. Abrir index.html diretamente usa demonstração em memória.
-- `frontend/js/graph/graph-model.js`: grafo lógico → instâncias por caminho, cobertura mínima por componentes fortemente conexos, ciclos terminais e normas isoladas flutuantes.
+- `frontend/js/graph/graph-model.js`: grafo lógico → instâncias por caminho, cobertura mínima **por família** sobre componentes fortemente conexos, ciclos terminais e normas isoladas flutuantes.
 - `organic-layout.js`: posições calculadas, setores, copa fractal e separação de células. Não grava coordenadas no banco.
 - `workspace-renderer.js`: câmera, desenho, seleção e realce das aparições relacionadas a ilhas.
 - `core/`: biblioteca .NET sem dependências de UI, leitura/validação, revisão/fingerprint e transações JSON. Pode ser integrada ao backend do app MAHLE.
@@ -22,13 +22,13 @@ Uma transação prepara arquivos novos e cópias anteriores, manifesta os hashes
 
 Isso fornece recuperação coordenada entre arquivos, não atomicidade de pasta garantida para leitores externos que ignoram o protocolo. Toda edição direta deve usar manutenção e todo leitor externo deve evitar arquivos durante gravações. Garantias de flush, exclusão e rename dependem do sistema de arquivos/servidor; validar SMB real é obrigatório.
 
-## Cobertura mínima
+## Cobertura mínima por família
 
-Para o subgrupo, entram normas aplicáveis, normas gerais e referências de entrada legadas; depois se inclui o fechamento por citações. A decomposição de Tarjan condensa ciclos. Cada componente sem entrada de outro componente precisa de um ponto inicial. Escolher um representante de cada um é um mínimo exato de cobertura por alcance.
+Para o subgrupo, entram normas aplicáveis, normas gerais e referências de entrada legadas; depois se inclui o fechamento por citações. A decomposição de Tarjan condensa ciclos. Para **cada família**, consideram-se os componentes que contêm normas daquela família e o alcance entre eles, mesmo quando um caminho passa por outras famílias. Um componente sem ancestral alcançável da mesma família precisa de uma entrada nativa. Escolher um representante da própria família em cada um desses componentes produz a cobertura mínima daquele setor.
 
-Dentro de um ciclo, prioriza-se quem tem mais citações diretas; empate por código/UUID, de forma determinística. Normas completamente isoladas são flutuantes sem aresta para o produto. O número mínimo não pode ser reduzido criando citações artificiais. MEAS/MNFG conservam ilhas próprias e cópias quando citadas em galhos.
+Dentro de um ciclo, escolhe-se um representante **de cada família presente**, priorizando quem tem mais citações diretas dentro das opções daquela família; empate por código/UUID, de forma determinística. Assim, MATL→TEST mantém uma entrada nativa de MATL, uma de TEST e a cópia de TEST no galho de MATL. Um ciclo TEST→MATL→DSGN→TEST não elimina nenhum dos três setores. Normas completamente isoladas são flutuantes sem aresta para o produto. MEAS/MNFG conservam ilhas próprias e cópias quando citadas em galhos.
 
-A expansão por caminho termina nos ciclos. Depois do orçamento de repetições, caminhos já expandidos deixam de ser repetidos recursivamente; primeiras ocorrências continuam sendo expandidas para preservar a cobertura única. Filtros do usuário são uma ocultação intencional e a lista de conexões continua integral.
+A expansão por caminho termina nos ciclos. Depois do orçamento de repetições, caminhos já expandidos deixam de ser repetidos recursivamente; primeiras ocorrências **em cada setor** continuam sendo expandidas para preservar a cobertura nativa. Filtros do usuário são uma ocultação intencional e a lista de conexões continua integral. Reference families, à direita, seleciona uma família exclusiva; All restaura todas, enquanto a legenda permite combinações.
 
 ## Escopo de validação
 

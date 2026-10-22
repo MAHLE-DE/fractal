@@ -46,7 +46,7 @@ internal sealed class WorkspaceWindow : Form
         }
         catch (Exception e) { _configurationError = e.Message; }
         if (smokeTest) { Opacity = 0; ShowInTaskbar = false; }
-        Text = "MAHLE BU2 Workspace · Standards Workspace 0.2.0";
+        Text = "MAHLE BU2 Workspace · Standards Workspace 0.2.1";
         ClientSize = new Size(1580, 930); MinimumSize = new Size(1060, 720); StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(11, 33, 60);
         var icon = Path.Combine(AppContext.BaseDirectory, "frontend", "assets", "app.ico");

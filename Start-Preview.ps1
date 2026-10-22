@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param([switch]$SmokeTest)
 $ErrorActionPreference = 'Stop'
-$taskPackage = Join-Path $PSScriptRoot 'distribution\0.2.0\Fractal-Workspace-0.2.0-win-x64.zip'
+$taskPackage = Join-Path $PSScriptRoot 'distribution\0.2.1\Fractal-Workspace-0.2.1-win-x64.zip'
 $taskConfig = Join-Path $PSScriptRoot 'config\appsettings.json'
 if (!(Test-Path -LiteralPath $taskConfig)) { throw 'Configuracao ausente: config\appsettings.json. Extraia o repositorio completo.' }
 $taskExe = $null
@@ -13,7 +13,7 @@ if (Test-Path -LiteralPath $taskPackage) {
     $taskHash = (Get-FileHash -LiteralPath $taskPackage -Algorithm SHA256).Hash
     if ($taskExpected.Length -ne 64 -or $taskHash -ne $taskExpected) { throw 'O pacote esta incompleto ou foi alterado. Baixe novamente o ZIP completo do GitHub.' }
     $taskCacheBase = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MAHLE\FractalWorkspace\packages'
-    $taskInstall = Join-Path $taskCacheBase ('0.2.0-' + $taskHash.Substring(0, 16))
+    $taskInstall = Join-Path $taskCacheBase ('0.2.1-' + $taskHash.Substring(0, 16))
     $taskExe = Join-Path $taskInstall 'Fractal.Preview.exe'
     $taskReady = Join-Path $taskInstall '.complete'
     New-Item -ItemType Directory -Path $taskCacheBase -Force | Out-Null
