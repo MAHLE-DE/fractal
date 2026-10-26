@@ -1,0 +1,17 @@
+﻿.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+dist/
+build/
+*.spec
+.DS_Store
+Thumbs.db
+artifacts/
+**/bin/
+**/obj/
+distribution/*/
+!distribution/0.2.1/
+distribution/0.2.1/*
+!distribution/0.2.1/Fractal-Workspace-0.2.1-win-x64.zip
+!distribution/0.2.1/Fractal-Workspace-0.2.1-win-x64.zip.sha256
