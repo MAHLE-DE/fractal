@@ -1,0 +1,39 @@
+{
+  "identification": {
+    "document_no": "TEST-168",
+    "revision_no": "1.0",
+    "title": "Test specifications for leakage test with air",
+    "previous_document_numbers": [
+      "G-G-TG-4005-en (V01)"
+    ]
+  },
+  "classification": {
+    "origin": "internal",
+    "internal_category": "test",
+    "organization": "MAHLE",
+    "customer_id": null
+  },
+  "applicability": {
+    "product_group_ids": [],
+    "product_subgroup_ids": [],
+    "is_general": true
+  },
+  "tree_entry": {
+    "family": "test",
+    "strength_level": 3
+  },
+  "document_location": {
+    "online_url": "https://mahle.sharepoint.com/sites/DevDocs/_layouts/15/listform.aspx?PageType=4&ListId=3b02ada5-1936-4997-8416-69a1f96c403c&ID=13167",
+    "file_name": "G-G-TG-4005-en V1.1.pdf",
+    "file_path": "\\\\itc.global.mahle\\BRJU\\BU2\\15. Robustez DE-CAD\\00 Dashboard - KPI\\source_app\\validstandards\\G-G-TG-4005-en V1.1.pdf"
+  },
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T15:59:27.980914Z",
+    "updated_at": "2026-10-23T15:59:27.980914Z",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  },
+  "id": "8e8b30e9-64ed-4a4e-889b-dc7c4c1f3f9d",
+  "schema_version": "2.0"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Air cleaner modules \u0026 components",
+  "product_group_ids": [
+    "FLUID-SYSTEMS-AIR"
+  ],
+  "description": "Complete air filtration assemblies and related components that remove contaminants from incoming air before it reaches the engine intake system.",
+  "image_path": "",
+  "id": "83e00564-87ce-4169-bd20-9fccd01be3eb",
+  "schema_version": "2.0",
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T13:06:20.8849085\u002B00:00",
+    "updated_at": "2026-10-23T13:06:20.8849106\u002B00:00",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  }
+}

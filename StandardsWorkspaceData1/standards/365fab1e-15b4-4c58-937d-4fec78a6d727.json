@@ -1,0 +1,43 @@
+{
+  "identification": {
+    "document_no": "TEST-256",
+    "revision_no": "1.0",
+    "title": "Activated carbon canister for gasoline vapor, Migration- and permeation properties in the mini-SHED, Test specification",
+    "previous_document_numbers": [
+      "S-C-TG-8157-en (V01)"
+    ]
+  },
+  "classification": {
+    "origin": "internal",
+    "internal_category": "test",
+    "organization": "MAHLE",
+    "customer_id": null
+  },
+  "applicability": {
+    "product_group_ids": [
+      "FLUID-SYSTEMS-AIR"
+    ],
+    "product_subgroup_ids": [
+      "2f04979a-de8b-4893-b0a0-738657c141de"
+    ],
+    "is_general": false
+  },
+  "tree_entry": {
+    "family": "test",
+    "strength_level": 3
+  },
+  "document_location": {
+    "online_url": "https://mahle.sharepoint.com/sites/DevDocs/_layouts/15/listform.aspx?PageType=4&ListId=3b02ada5-1936-4997-8416-69a1f96c403c&ID=13329",
+    "file_name": "S-C-TG-8157-en.pdf",
+    "file_path": "\\\\itc.global.mahle\\BRJU\\BU2\\15. Robustez DE-CAD\\00 Dashboard - KPI\\source_app\\validstandards\\S-C-TG-8157-en.pdf"
+  },
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T15:59:27.980914Z",
+    "updated_at": "2026-10-23T15:59:27.980914Z",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  },
+  "id": "365fab1e-15b4-4c58-937d-4fec78a6d727",
+  "schema_version": "2.0"
+}

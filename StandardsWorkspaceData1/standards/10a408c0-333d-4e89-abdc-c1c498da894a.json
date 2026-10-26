@@ -1,0 +1,37 @@
+{
+  "identification": {
+    "document_no": "ASTM D2866-11",
+    "revision_no": "1",
+    "title": "External standard referenced by MAHLE engineering standards",
+    "previous_document_numbers": []
+  },
+  "classification": {
+    "origin": "international",
+    "internal_category": null,
+    "organization": "MAHLE",
+    "customer_id": null
+  },
+  "applicability": {
+    "product_group_ids": [],
+    "product_subgroup_ids": [],
+    "is_general": true
+  },
+  "tree_entry": {
+    "family": "material",
+    "strength_level": 3
+  },
+  "document_location": {
+    "online_url": "",
+    "file_name": null,
+    "file_path": null
+  },
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T19:11:18.658128+00:00",
+    "updated_at": "2026-10-23T19:11:18.658128+00:00",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  },
+  "id": "10a408c0-333d-4e89-abdc-c1c498da894a",
+  "schema_version": "2.0"
+}

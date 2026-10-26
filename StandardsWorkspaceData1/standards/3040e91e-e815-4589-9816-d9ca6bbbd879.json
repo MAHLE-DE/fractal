@@ -1,0 +1,44 @@
+{
+  "identification": {
+    "document_no": "MATL-626",
+    "revision_no": "1.0",
+    "title": "Material specification for rubber parts in oil- and fuel filters in MAHLE Aftermarket GmbH",
+    "previous_document_numbers": [
+      "S-G-ML-1005-en (V02)"
+    ]
+  },
+  "classification": {
+    "origin": "internal",
+    "internal_category": "material",
+    "organization": "MAHLE",
+    "customer_id": null
+  },
+  "applicability": {
+    "product_group_ids": [
+      "FLUID-SYSTEMS-LIQUID"
+    ],
+    "product_subgroup_ids": [
+      "da752874-1d16-40ab-aaa1-fc6836e4ff74",
+      "07d4aa2a-30ff-4114-9bc5-020d052db016"
+    ],
+    "is_general": false
+  },
+  "tree_entry": {
+    "family": "material",
+    "strength_level": 3
+  },
+  "document_location": {
+    "online_url": "https://mahle.sharepoint.com/sites/DevDocs/_layouts/15/listform.aspx?PageType=4&ListId=3b02ada5-1936-4997-8416-69a1f96c403c&ID=14927",
+    "file_name": "MATL-626.pdf",
+    "file_path": "\\\\itc.global.mahle\\BRJU\\BU2\\15. Robustez DE-CAD\\00 Dashboard - KPI\\source_app\\validstandards\\MATL-626.pdf"
+  },
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T15:59:27.980914Z",
+    "updated_at": "2026-10-23T15:59:27.980914Z",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  },
+  "id": "3040e91e-e815-4589-9816-d9ca6bbbd879",
+  "schema_version": "2.0"
+}

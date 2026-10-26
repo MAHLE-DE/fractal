@@ -1,0 +1,49 @@
+{
+  "identification": {
+    "document_no": "TEST-288",
+    "revision_no": "1.0",
+    "title": "Test specification for adhesive K 13 (2 components, oil-, fuel- and air application)",
+    "previous_document_numbers": [
+      "S-G-ML-3130-en (V02)"
+    ]
+  },
+  "classification": {
+    "origin": "internal",
+    "internal_category": "test",
+    "organization": "MAHLE",
+    "customer_id": null
+  },
+  "applicability": {
+    "product_group_ids": [
+      "FLUID-SYSTEMS-AIR",
+      "FLUID-SYSTEMS-LIQUID"
+    ],
+    "product_subgroup_ids": [
+      "b9b07214-441c-42e0-b5df-39883c01e2b7",
+      "83e00564-87ce-4169-bd20-9fccd01be3eb",
+      "08277677-6e93-479d-9f08-368a9452c2c5",
+      "da752874-1d16-40ab-aaa1-fc6836e4ff74",
+      "2f04979a-de8b-4893-b0a0-738657c141de",
+      "07d4aa2a-30ff-4114-9bc5-020d052db016"
+    ],
+    "is_general": false
+  },
+  "tree_entry": {
+    "family": "test",
+    "strength_level": 3
+  },
+  "document_location": {
+    "online_url": "https://mahle.sharepoint.com/sites/DevDocs/_layouts/15/listform.aspx?PageType=4&ListId=3b02ada5-1936-4997-8416-69a1f96c403c&ID=14016",
+    "file_name": "S-G-ML-3130-en.pdf",
+    "file_path": "\\\\itc.global.mahle\\BRJU\\BU2\\15. Robustez DE-CAD\\00 Dashboard - KPI\\source_app\\validstandards\\S-G-ML-3130-en.pdf"
+  },
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T15:59:27.980914Z",
+    "updated_at": "2026-10-23T15:59:27.980914Z",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  },
+  "id": "bdd4da2b-4cbc-4a11-a346-47dec406daa3",
+  "schema_version": "2.0"
+}

@@ -1,0 +1,46 @@
+{
+  "identification": {
+    "document_no": "DSGN-446",
+    "revision_no": "1.0",
+    "title": "Valve assemblies for liquid filters – Installation instructions",
+    "previous_document_numbers": [
+      "S-L-PT-8120-P03-en (V01)"
+    ]
+  },
+  "classification": {
+    "origin": "internal",
+    "internal_category": "design",
+    "organization": "MAHLE",
+    "customer_id": null
+  },
+  "applicability": {
+    "product_group_ids": [
+      "FLUID-SYSTEMS-LIQUID",
+      "FLUID-SYSTEMS-AIR"
+    ],
+    "product_subgroup_ids": [
+      "da752874-1d16-40ab-aaa1-fc6836e4ff74",
+      "07d4aa2a-30ff-4114-9bc5-020d052db016",
+      "2f04979a-de8b-4893-b0a0-738657c141de"
+    ],
+    "is_general": false
+  },
+  "tree_entry": {
+    "family": "design",
+    "strength_level": 3
+  },
+  "document_location": {
+    "online_url": "https://mahle.sharepoint.com/sites/DevDocs/_layouts/15/listform.aspx?PageType=4&ListId=3b02ada5-1936-4997-8416-69a1f96c403c&ID=14314",
+    "file_name": "S-L-PT-8120-P03-en_V01.pdf",
+    "file_path": "\\\\itc.global.mahle\\BRJU\\BU2\\15. Robustez DE-CAD\\00 Dashboard - KPI\\source_app\\validstandards\\S-L-PT-8120-P03-en_V01.pdf"
+  },
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T15:59:27.980914Z",
+    "updated_at": "2026-10-23T15:59:27.980914Z",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  },
+  "id": "0d3145bf-6e57-4009-9681-f4ab4fd6f126",
+  "schema_version": "2.0"
+}

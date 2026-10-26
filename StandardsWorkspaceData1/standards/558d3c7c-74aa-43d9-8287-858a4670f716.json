@@ -1,0 +1,45 @@
+{
+  "identification": {
+    "document_no": "DSGN-478",
+    "revision_no": "1.0",
+    "title": "General Specifications for Drawings Drawing standard for air intake modules, valve cover modules and components",
+    "previous_document_numbers": [
+      "S-I-DN-5010-en (V012)"
+    ]
+  },
+  "classification": {
+    "origin": "internal",
+    "internal_category": "design",
+    "organization": "MAHLE",
+    "customer_id": null
+  },
+  "applicability": {
+    "product_group_ids": [
+      "FLUID-SYSTEMS-AIR",
+      "FLUID-SYSTEMS-LIQUID"
+    ],
+    "product_subgroup_ids": [
+      "08277677-6e93-479d-9f08-368a9452c2c5",
+      "b9b07214-441c-42e0-b5df-39883c01e2b7"
+    ],
+    "is_general": false
+  },
+  "tree_entry": {
+    "family": "design",
+    "strength_level": 3
+  },
+  "document_location": {
+    "online_url": "https://mahle.sharepoint.com/sites/DevDocs/_layouts/15/listform.aspx?PageType=4&ListId=3b02ada5-1936-4997-8416-69a1f96c403c&ID=14242",
+    "file_name": "S-I-DN-5010-en_V12.pdf",
+    "file_path": "\\\\itc.global.mahle\\BRJU\\BU2\\15. Robustez DE-CAD\\00 Dashboard - KPI\\source_app\\validstandards\\S-I-DN-5010-en_V12.pdf"
+  },
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T15:59:27.980914Z",
+    "updated_at": "2026-10-23T15:59:27.980914Z",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  },
+  "id": "558d3c7c-74aa-43d9-8287-858a4670f716",
+  "schema_version": "2.0"
+}

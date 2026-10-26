@@ -1,0 +1,43 @@
+{
+  "identification": {
+    "document_no": "MATL-585",
+    "revision_no": "1.0",
+    "title": "Technical knowledge of Water absorption for PA66 and PA6",
+    "previous_document_numbers": [
+      "S-C-DN-5034-en (V00)"
+    ]
+  },
+  "classification": {
+    "origin": "internal",
+    "internal_category": "material",
+    "organization": "MAHLE",
+    "customer_id": null
+  },
+  "applicability": {
+    "product_group_ids": [
+      "FLUID-SYSTEMS-AIR"
+    ],
+    "product_subgroup_ids": [
+      "2f04979a-de8b-4893-b0a0-738657c141de"
+    ],
+    "is_general": false
+  },
+  "tree_entry": {
+    "family": "material",
+    "strength_level": 3
+  },
+  "document_location": {
+    "online_url": "https://mahle.sharepoint.com/sites/DevDocs/_layouts/15/listform.aspx?PageType=4&ListId=3b02ada5-1936-4997-8416-69a1f96c403c&ID=13219",
+    "file_name": "S-C-DN-5034-en.pdf",
+    "file_path": "\\\\itc.global.mahle\\BRJU\\BU2\\15. Robustez DE-CAD\\00 Dashboard - KPI\\source_app\\validstandards\\S-C-DN-5034-en.pdf"
+  },
+  "record_control": {
+    "revision": 1,
+    "created_at": "2026-10-23T15:59:27.980914Z",
+    "updated_at": "2026-10-23T15:59:27.980914Z",
+    "updated_by": "ITC\\M0242198",
+    "status": "active"
+  },
+  "id": "580ff97e-5f45-4dfc-8845-043d97390eb0",
+  "schema_version": "2.0"
+}
