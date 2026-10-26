@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>MAHLE · Standards Workspace</title>
+  <link rel="icon" href="./assets/app.ico">
+  <link rel="stylesheet" href="./css/workspace.css">
+  <link rel="stylesheet" href="./css/readability.css">
+<style>
+  .test-layout-controls { display:flex; align-items:center; gap:5px; }
+  .test-layout-controls>span { font-size:10px; font-weight:700; letter-spacing:1px; color:#56708c; margin-right:4px; }
+  .test-layout-controls .button { font-size:12px; min-height:35px; padding:8px 10px; }
+  .test-layout-controls [aria-pressed=true] { background:#163e67; color:white; border-color:#163e67; }
+  .header-actions>[data-new-standard],.header-actions>[data-preferences] { display:none; }
+  [data-open-file],[data-open-link],[data-update-standard],[data-delete-standard],[data-subgroup-photo],[data-new-product],[data-new-relation],[data-edit-relation],[data-delete-relation] { pointer-events:none!important; opacity:.5; }
+  @media(max-width:1400px) { .test-layout-controls>span,.header-actions>.demo-badge {display:none;} .test-layout-controls .button{padding:8px;} }
+  </style></head>
+<body>
+  <div id="app"></div>
+  <div id="tooltip" class="graph-tooltip" hidden></div>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <input id="browser-file" type="file" accept=".pdf,.doc,.docx" hidden>
+  <script src="./js/demo-data.js"></script>
+  <script src="./js/graph/graph-model.js"></script>
+  <script src="./js/graph/organic-layout.js"></script>
+  <script src="./js/graph/workspace-renderer.js"></script>
+  <script src="../data/workspace-snapshot.js"></script>
+  <script src="./js/visual-test-data.js"></script>
+  <script src="./js/legacy-layout.js"></script>
+  <script src="./js/layout-candidates.js"></script>
+  <script>window.FractalLayout = window.LayoutCanopy;</script>
+  <script src="./js/workspace.js"></script>
+  <script src="./js/visual-test-controls.js"></script>
+</body>
+</html>

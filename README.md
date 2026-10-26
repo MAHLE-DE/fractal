@@ -1,4 +1,20 @@
-# MAHLE Standards Workspace — Fractal 0.2.1
+# MAHLE Standards Workspace — Fractal
+
+## Testar a nova árvore no PC comercial — HTML
+
+1. Baixe o ZIP do repositório e **extraia tudo**.
+2. Abra **Abrir teste HTML.html**, na raiz, ou **html-preview/Abrir teste.html** no Edge ou Chrome.
+3. Use **Canopy** para ver o motor novo. O seletor superior também permite comparar Original, Growth e Envelope.
+
+A pasta [html-preview](html-preview/LEIA-ME.md) contém tudo para o teste e pode ser copiada sozinha para outro computador. Funciona offline, **sem EXE próprio, Python, Node, .NET, instalação ou PDFs**. Arraste para mover a árvore, use a roda para aproximar e duplo clique para enquadrar.
+
+A prévia é **somente leitura** e usa um snapshot com 692 normas, sete subgrupos e 558 relações. Não acessa o banco comercial nem salva cadastros. A pasta operacional `StandardsWorkspaceData1` foi retirada da versão atual do repositório; seus backups e transações não fazem parte do teste. O snapshot visual fica em `html-preview/data/workspace-snapshot.js`.
+
+O motor novo mantém os ramos orientados para fora, reserva espaço por subárvore e permite que setores maiores se abram na copa. Foram validadas 36 combinações com o banco real, sem sobreposições de células ou perda de cobertura. Veja o [relatório de testes](docs/testes-motores-copa-2026-10-26.md).
+
+**Os iniciadores `.cmd` abaixo continuam abrindo o pacote Windows 0.2.1 já publicado. Para avaliar estas mudanças visuais, use o HTML acima.**
+
+## Aplicativo Windows operacional — 0.2.1
 
 Módulo independente de normas para futura integração ao MAHLE BU2 Workspace. Interface em inglês, documentação em português. Agora possui cadastro operacional, documentos reais e persistência em JSON; o modo demonstrativo continua disponível.
 
@@ -90,3 +106,15 @@ node tests/production.e2e.cjs
 O último teste usa o repositório JSON real com transporte de teste e seletor de arquivo simulado. Abertura nativa é verificada separadamente pelo smoke test WebView2. Fixtures ficam em pastas temporárias exclusivas, nunca no banco da empresa.
 
 Veja [PC comercial](docs/pc-comercial.md), [arquitetura](docs/visual-preview.md) e o contrato original preservado. As decisões posteriores do usuário — subgrupos como contexto e raízes automáticas — prevalecem sobre o contrato original.
+
+### Verificar a prévia HTML no desenvolvimento
+
+Estes comandos usam o snapshot incluído em `html-preview`, sem precisar da pasta operacional retirada do Git:
+
+```powershell
+node --test tests/graph.test.cjs tests/canopy-layout.test.cjs
+node tests/canopy.e2e.cjs html-preview
+node tests/layout-preview.e2e.cjs html-preview
+```
+
+Requerem Node e Playwright/Edge somente no computador de desenvolvimento. No PC comercial basta abrir o HTML.
