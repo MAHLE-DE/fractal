@@ -137,7 +137,7 @@ Exemplo: 6ebea18d-7eb3-4ca7-814d-87f1cf988d24
 | Arquivo local | document_location.file_path | Obrigatório para normas internas; opcional para internacionais. |
 | Categoria | classification.internal_category | test, material, design, measurement ou manufacturing. |
 | Origem | classification.origin | internal, international ou customer. |
-| Organização | classification.organization | MAHLE ou organismo internacional aplicável. |
+| Organização | classification.organization | Organização interna ou organismo internacional aplicável. |
 
 ## 4.3 Regras de arquivo
 
@@ -188,7 +188,7 @@ Deve existir uma operação separada para corrigir apenas o caminho quando o arq
 "classification": {  
 "origin": "internal",  
 "internal_category": "design",  
-"organization": "MAHLE",  
+"organization": "ACME",  
 "customer_id": null  
 },  
 "applicability": {  

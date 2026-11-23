@@ -1,6 +1,6 @@
 # Banco JSON 2.0 — referência para edição manual / IA
 
-O caminho efetivo é `dataRoot` em `config/appsettings.json`, também exibido em Settings. Padrão: `C:\Users\Public\Documents\MAHLE\StandardsWorkspaceData`. **Não edite a pasta data/ do repositório esperando alterar a aplicação.**
+O caminho efetivo é `dataRoot` em `config/appsettings.json`, também exibido em Settings. Padrão: uma pasta `StandardsWorkspaceData` dentro de `C:\Users\Public\Documents` (o caminho exato está em `config/appsettings.json`). **Não edite a pasta data/ do repositório esperando alterar a aplicação.**
 
 ## Protocolo obrigatório
 
@@ -38,7 +38,7 @@ Exemplo de norma interna (troque IDs/caminho pelos reais):
   "classification": {
     "origin": "internal",
     "internal_category": "test",
-    "organization": "MAHLE",
+    "organization": "ACME",
     "customer_id": null
   },
   "applicability": {

@@ -11,7 +11,7 @@ Windows x64 + WebView2 Runtime. Não precisa .NET SDK, Python ou Node. O pacote 
 No fluxo do iniciador, edite `config/appsettings.json` da raiz baixada. Na extração manual do pacote, edite o arquivo homônimo ao lado do executável. É a **mesma configuração lógica**, mas cada fluxo lê sua própria cópia.
 
 - `mode: "production"` para cadastro real persistente.
-- `dataRoot` é a pasta do banco. Por padrão: `C:\Users\Public\Documents\MAHLE\StandardsWorkspaceData`.
+- `dataRoot` é a pasta do banco. Por padrão: uma pasta `StandardsWorkspaceData` dentro de `C:\Users\Public\Documents` (o caminho exato já vem em `config/appsettings.json`).
 - Para equipe: preencha a mesma UNC em todos os PCs, com leitura e escrita. Exemplo JSON: `"dataRoot": "\\\\SERVIDOR\\Equipe\\StandardsWorkspaceData"`.
 - Feche e reabra depois de mudar a configuração.
 

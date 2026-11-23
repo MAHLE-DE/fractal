@@ -6,7 +6,7 @@ A prévia 0.1.0 era somente visual. A 0.2.1 preserva a aparência e separa inter
 - `frontend/js/graph/graph-model.js`: grafo lógico → instâncias por caminho, cobertura mínima **por família** sobre componentes fortemente conexos, ciclos terminais e normas isoladas flutuantes.
 - `organic-layout.js`: posições calculadas, setores, copa fractal e separação de células. Não grava coordenadas no banco.
 - `workspace-renderer.js`: câmera, desenho, seleção e realce das aparições relacionadas a ilhas.
-- `core/`: biblioteca .NET sem dependências de UI, leitura/validação, revisão/fingerprint e transações JSON. Pode ser integrada ao backend do app MAHLE.
+- `core/`: biblioteca .NET sem dependências de UI, leitura/validação, revisão/fingerprint e transações JSON. Pode ser integrada ao backend do app principal.
 - `desktop/`: WinForms/WebView2, ponte de mensagens restrita à origem local, seletor Windows, abertura de documentos/links registrados e entrega de imagens do banco.
 - `config/appsettings.json`: instalação, modo e pasta de dados.
 - `tests/`: regressões de grafo, dados e interface.

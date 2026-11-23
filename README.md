@@ -1,4 +1,4 @@
-# MAHLE Standards Workspace — Fractal
+# Standards Workspace — Fractal
 
 ## Testar a nova árvore no PC comercial — HTML
 
@@ -16,7 +16,7 @@ O motor novo mantém os ramos orientados para fora, reserva espaço por subárvo
 
 ## Aplicativo Windows operacional — 0.2.1
 
-Módulo independente de normas para futura integração ao MAHLE BU2 Workspace. Interface em inglês, documentação em português. Agora possui cadastro operacional, documentos reais e persistência em JSON; o modo demonstrativo continua disponível.
+Módulo independente de normas para futura integração a um workspace maior. Interface em inglês, documentação em português. Agora possui cadastro operacional, documentos reais e persistência em JSON; o modo demonstrativo continua disponível.
 
 ## Abrir no Windows comercial
 
@@ -24,7 +24,7 @@ Módulo independente de normas para futura integração ao MAHLE BU2 Workspace. 
 2. Edite `config/appsettings.json` conforme a seção abaixo.
 3. Abra **Abrir Fractal.cmd**. O antigo `Abrir prototipo.cmd` também abre esta versão.
 
-O pacote pronto fica em `distribution/0.2.1/Fractal-Workspace-0.2.1-win-x64.zip`. O iniciador valida seu SHA-256, extrai uma cópia por versão em `%LOCALAPPDATA%\MAHLE\FractalWorkspace\packages` e passa a configuração da **raiz do repositório** ao programa. Não edite a configuração dentro desse cache.
+O pacote pronto fica em `distribution/0.2.1/Fractal-Workspace-0.2.1-win-x64.zip`. O iniciador valida seu SHA-256, extrai uma cópia por versão em um cache dentro de `%LOCALAPPDATA%` e passa a configuração da **raiz do repositório** ao programa. Não edite a configuração dentro desse cache.
 
 Alternativa sem scripts: extraia esse pacote por inteiro, edite `config/appsettings.json` **da extração** e abra `Fractal.Preview.exe`. Esse nome interno foi mantido por compatibilidade; a interface identifica a versão 0.2.1.
 
@@ -36,11 +36,11 @@ Requer Windows x64 e WebView2 Runtime. Não precisa Python, Node, .NET SDK nem r
 {
   "schemaVersion": 2,
   "mode": "production",
-  "dataRoot": "%PUBLIC%\\Documents\\MAHLE\\StandardsWorkspaceData"
+  "dataRoot": "<pasta do banco>"
 }
 ```
 
-- O caminho padrão normalmente resulta em **C:\Users\Public\Documents\MAHLE\StandardsWorkspaceData**. É um banco **local**, útil para testar.
+- O valor padrão de `dataRoot` já vem preenchido em `config/appsettings.json` e aponta para uma pasta `StandardsWorkspaceData` dentro de **C:\Users\Public\Documents**. É um banco **local**, útil para testar.
 - Para compartilhar, todos os computadores devem configurar a **mesma pasta UNC**. Exemplo de valor no JSON: `"\\\\SERVIDOR\\Compartilhamento\\StandardsWorkspaceData"`.
 - `production`: banco novo vazio, com dois grupos iniciais genéricos. Cadastros são reais e persistentes.
 - `demo`: 104 normas fictícias somente em memória. Nenhum cadastro é gravado no banco. Abrir `frontend/index.html` no navegador também usa essa demonstração.
@@ -92,7 +92,7 @@ Backups técnicos não substituem o backup corporativo. Não edite `.transaction
 .\Start-Preview.ps1 -SmokeTest
 ```
 
-Build: .NET SDK 10 e pacote WebView2 via NuGet/cache, somente no computador de desenvolvimento. O script reconhece o SDK local utilizado pelo projeto MAHLE e gera pacote self-contained em `artifacts/`. Não modifica o outro repositório.
+Build: .NET SDK 10 e pacote WebView2 via NuGet/cache, somente no computador de desenvolvimento. O script reconhece o SDK local utilizado pelo projeto principal e gera pacote self-contained em `artifacts/`. Não modifica o outro repositório.
 
 Verificações adicionais com Node e Playwright/Edge no desenvolvimento:
 
