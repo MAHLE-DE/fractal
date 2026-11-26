@@ -127,3 +127,27 @@ localizadores agrupados, sem linhas de chamada até cada ponto de saída.
 As capturas intermediárias pausam a timeline apenas para fotografar o meio
 da transição. Capturas/vídeo/métricas anteriores da T19 foram preservados,
 em vez de substituídos por uma rodada parcial ou reprovada da T20.
+
+## Redesenho do orquestrador
+
+Roteiro reexecutado sobre `231f8c0`, sem alterar o visual nem avaliar a
+estética. Removidas verificações/interações do mural oculto `#edge-labels`;
+hover continua testado pelos itens `.relation`. A asserção do painel aceita
+encostar na borda, com tolerância de 1 px, conforme autorizado.
+
+Capturas regeneradas em `media/review/`: `01-overview.png`,
+`02-search-typing.png`, `03-search-public.png`, `04-focus-DSGN-347.png`,
+`05-sidepanel.png`, `06-hover-fiber.png`, `07-fiber-run-mid.png`,
+`08-fiber-run-arrive.png`, `09-ring-roll-mid.png`, `10-public-ring.png`,
+`11-public-mixed.png`, `12-opening-mid.png`, `14-light-theme.png`,
+`16-public-details.png`, `17-focus-inset.png`, `18-edge-labels.png`,
+`19-hover-neighbor.png`, `20-ring-roll-focus-mid.png`,
+`21-overview-public.png` e `22-panel-no-overlap.png`.
+O nome histórico `18-edge-labels.png` foi mantido; o mural está oculto.
+Também foram regenerados `15-full-flow.webm` e `metrics.json`.
+
+`npm test` passou: ocioso 59,99 FPS; foco 60,00; Fiber run 60,00;
+Ring roll 59,33. Zero erros de console e zero requisições externas.
+Os arquivos de benchmark fornecidos pelo orquestrador (`benchmark.json`,
+`idle.png`, `roll.png`, `zoom.png`) acompanham o commit sem modificação
+adicional nesta tarefa.
