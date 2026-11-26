@@ -1,3 +1,77 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Standards Cascade</title><style>
-*{box-sizing:border-box}body{margin:0;background:#060b15;color:#e3edf7;font:14px 'Segoe UI',sans-serif;overflow:hidden}canvas{display:block;width:100vw;height:100vh;background:radial-gradient(ellipse at 50% 55%,#10243755,transparent 65%)}header{position:absolute;top:30px;left:36px;right:36px;display:flex;justify-content:space-between;pointer-events:none}small{color:#7f96a9;font-size:11px;letter-spacing:1px}h1{font-size:24px;font-weight:400;letter-spacing:1px;margin:12px 0}header p{color:#7891a4;font-size:12px}nav{pointer-events:auto;display:flex;gap:12px;align-items:start}input,button{font:inherit;background:#111f2e;color:#dceaf8;border:1px solid #31475b;border-radius:7px;padding:11px}input{width:270px}button{cursor:pointer}button:hover{border-color:#8acfff}aside{position:absolute;right:36px;bottom:100px;width:300px;background:#0a1422de;border:1px solid #24384c;border-radius:12px;padding:22px;pointer-events:none}aside h2{font-size:25px;margin:7px 0}aside p{color:#9fb3c5;line-height:1.7}footer{position:absolute;bottom:28px;left:36px;right:36px;display:flex;justify-content:space-between;font-size:12px;color:#7891a4}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin:0 6px 0 18px}#fps{position:absolute;top:130px;left:36px;color:#99e8de;font:12px monospace}#error{position:absolute;top:45%;left:30%;color:#ffbfa4}</style>
-<canvas></canvas><header><div><small id="date"></small><h1>Standards Cascade</h1><p>A living network of engineering knowledge</p></div><nav><input list="standards" placeholder="Find a standard · code or title" aria-label="Find a standard"><datalist id="standards"></datalist><button id="live">Live motion: on</button><button id="reset">Overview</button></nav></header><aside><small>EXPLORE THE CASCADE</small><h2 id="focus">595 standards</h2><p id="title">Every thread is a citation. Choose a standard to bring it closer.</p><small id="detail">GPU edge bundling · Ring roll</small></aside><footer><div id="legend"></div><div>SCROLL TO ZOOM &nbsp; / &nbsp; ESC OVERVIEW &nbsp; / &nbsp; F FRAME RATE</div></footer><div id="fps" hidden></div><div id="error"></div><script src="./cascade.js"></script></html>
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Standards Cascade</title
+  ><link rel="stylesheet" href="./style.css" />
+  <script src="./config.js"></script>
+  <canvas id="scene"></canvas
+  ><canvas id="labels"></canvas>
+  <header>
+    <div class="brand">
+      <span id="date"></span>
+      <h1>Standards <em>Cascade</em></h1>
+      <p>Engineering knowledge, connected.</p>
+    </div>
+    <div class="search-wrap">
+      <div class="search-box">
+        <span>⌕</span
+        ><input
+          id="search"
+          role="combobox"
+          aria-controls="results"
+          aria-expanded="false"
+          aria-autocomplete="list"
+          placeholder="Find standards, topics, legacy codes…"
+          autocomplete="off"
+        /><kbd>/</kbd>
+      </div>
+      <div id="results" role="listbox" hidden></div>
+      <div id="breadcrumbs" aria-label="Navigation history"></div>
+    </div>
+    <div class="tools">
+      <label
+        >TRANSITION<select id="transition">
+          <option value="fiber">Fiber run</option>
+          <option value="roll">Ring roll</option>
+        </select></label
+      ><label
+        >PUBLIC STANDARDS<select id="public">
+          <option value="ring">Ring</option>
+          <option value="mixed">Mixed</option>
+        </select></label
+      ><button id="live">◉ Live motion</button
+      ><button id="theme">☼ Theme</button>
+    </div>
+  </header>
+  <aside id="panel" aria-live="polite"></aside>
+  <div id="focus-label"></div>
+  <div id="opening">
+    <small>THE KNOWLEDGE BEHIND EVERY DECISION</small>
+    <h2>A constellation of standards.</h2>
+    <p>595 standards. Thousands of connections. One living atlas.</p>
+    <button id="skip">Skip introduction →</button>
+  </div>
+  <div id="overview-note">
+    <small>THE ATLAS</small>
+    <h2>Follow a thread.<br />Discover what depends on it.</h2>
+    <p>Choose a standard to bring its connections into view.</p>
+  </div>
+  <footer>
+    <div id="legend"></div>
+    <div>
+      <button id="overview">↙ Overview</button
+      ><span>SCROLL TO EXPLORE &nbsp; · &nbsp; F FOR FPS</span>
+    </div>
+  </footer>
+  <div id="fps" hidden></div>
+  <div id="toast" role="status"></div>
+  <dialog id="file-dialog">
+    <h2>Open document</h2>
+    <p>If the browser blocked opening this file, copy its path:</p>
+    <input id="file-path" readonly /><button id="copy-path">Copy path</button
+    ><button id="close-dialog">Close</button>
+  </dialog>
+  <script src="./cascade.js"></script>
+</html>

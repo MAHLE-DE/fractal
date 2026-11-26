@@ -8,20 +8,27 @@
   },
   "scripts": {
     "build": "vite build",
-    "test": "node tools/benchmark.cjs",
-    "build-data": "python tools/build-data.py"
+    "test": "node tools/verify-data.cjs && node tools/geometry-test.cjs && node tools/review.cjs",
+    "build-data": "python tools/build-data.py",
+    "review": "node tools/review.cjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^26.6.10",
     "playwright": "^1.65.1",
+    "prettier": "^3.10.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.8"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "d3-hierarchy": "^3.1.3",
     "gsap": "^3.15.1"
   },
   "private": true

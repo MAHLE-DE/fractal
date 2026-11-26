@@ -13,7 +13,7 @@ def group(d):
  m=re.match(r'[SGW]-([A-Z])-([A-Z]{2})-(\d{2})',records[d].get('previous_document_no') or '')
  return m.groups() if m else ('-','-','--')
 ids=sorted(records,key=lambda d:(d.split('-')[0],group(d),d)); positions={d:i for i,d in enumerate(ids)}
-nodes=[dict(id=d,category=d.split('-')[0],group=group(d)[0],type=group(d)[1],title=records[d]['title'],previous=records[d].get('previous_document_no') or '',language=records[d]['language'],file=records[d].get('local_file_name') or '',angle=2*math.pi*i/len(ids)) for i,d in enumerate(ids)]
+nodes=[dict(id=d,category=d.split('-')[0],group=group(d)[0],type=group(d)[1],title=records[d]['title'],previous=records[d].get('previous_document_no') or '',language=records[d]['language'],file=records[d].get('local_file_name') or '',aliases=sorted(k for k,v in mapping.items() if v.get('atual')==d and v.get('status') in ('VIGENTE','RESOLVIDO')),angle=2*math.pi*i/len(ids)) for i,d in enumerate(ids)]
 hierarchy=[]
 for cat in sorted({n['category'] for n in nodes}):
  groups=[]
@@ -28,8 +28,8 @@ for row in result['correlacoes']:
  if row['tipo']=='interna' and x in records and y in records and x!=y:
   aa,bb=ancestors(x),ancestors(y)
   controls=[[aa[0],1],[aa[1],.76],[aa[2],.40],[0,0],[bb[2],.40],[bb[1],.76],[bb[0],1]]
-  edges.append(dict(source=x,target=y,evidence=row['evidencia'],pages=row['paginas'],controls=controls,beta=.85))
- elif row['tipo'] in ('publica','regulatoria'): public.append(dict(source=x,target=y,evidence=row['evidencia'],pages=row['paginas']))
+  edges.append(dict(source=x,target=y,evidence=row['evidencia'],pages=row['paginas'],rawCodes=row.get('codigo_bruto',[]),mapStatus=row.get('status_mapa',''),controls=controls,beta=.85))
+ elif row['tipo'] in ('publica','regulatoria'): public.append(dict(source=x,target=y,evidence=row['evidencia'],pages=row['paginas'],rawCodes=row.get('codigo_bruto',[]),mapStatus=row.get('status_mapa','')))
  elif row['tipo']=='interna': legacy.append((x,y))
 assert len({(e['source'],e['target']) for e in edges})==len(edges)
 adj={d:set() for d in ids}
