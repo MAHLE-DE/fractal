@@ -72,8 +72,8 @@ let activeBrowser;
   await page.waitForTimeout(2200);
   assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-347");
   assert(await page.locator("#results").evaluate((e) => e.hidden));
-  assert(await page.locator("#trail").isVisible());
-  assert(await page.locator("#back").isDisabled(), "Back starts disabled on the first standard");
+  assert(await page.locator("#back").isHidden(), "Back only appears when there is somewhere to go back to");
+  assert.equal(await page.locator("#breadcrumbs, #trail, #theme, #overview-note").count(), 0);
   await page.screenshot({ path: `${dir}/04-focus-DSGN-347.png` });
   assert(await page.locator("#focus-inset").isVisible());
   await page.screenshot({ path: `${dir}/17-focus-inset.png` });
@@ -129,14 +129,14 @@ let activeBrowser;
   await page.waitForTimeout(2600);
   assert.equal(await page.evaluate(() => window.cascade.current), "MATL-686");
   // Voltar percorre a cascata ate a primeira norma clicada.
-  assert.equal(await page.locator("#breadcrumbs button").count(), 3);
+  assert(await page.locator("#back").isVisible());
   await page.locator("#back").click();
   await page.waitForTimeout(2800);
   assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-348");
   await page.keyboard.press("Backspace");
   await page.waitForTimeout(2800);
   assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-347");
-  assert(await page.locator("#back").isDisabled());
+  assert(await page.locator("#back").isHidden());
   await page.screenshot({ path: `${dir}/23-back-to-first.png` });
   // Norma final sem codigo novo.
   await page.evaluate(() => window.cascade.focus("W-B-0718"));
@@ -161,10 +161,24 @@ let activeBrowser;
     await page.locator("#search").evaluate((e) => e === document.activeElement),
   );
   await page.locator("#search").press("Escape");
-  await page.locator("#theme").click();
-  await page.waitForTimeout(250);
-  await page.screenshot({ path: `${dir}/14-light-theme.png` });
-  await page.locator("#theme").click();
+  // Arrastar com o botao esquerdo gira a roda (sem selecionar norma) e segue com inercia.
+  await page.evaluate(() => window.cascade.overview());
+  await page.waitForTimeout(1500);
+  const before = await page.evaluate(() => window.cascade.state.rotation);
+  await page.mouse.move(600, 820);
+  await page.mouse.down();
+  for (let x = 600; x <= 1000; x += 20) {
+    await page.mouse.move(x, 830);
+    await page.waitForTimeout(12);
+  }
+  await page.mouse.up();
+  const released = await page.evaluate(() => window.cascade.state.rotation);
+  await page.waitForTimeout(1200);
+  const settled = await page.evaluate(() => window.cascade.state.rotation);
+  assert(released - before > 0.5, "Dragging right along the bottom turns the wheel");
+  assert(settled > released, "Wheel keeps gliding after release");
+  assert.equal(await page.evaluate(() => window.cascade.current), "", "A drag is not a click");
+  await page.screenshot({ path: `${dir}/14-drag-rotate.png` });
   const metrics = {};
   await page.evaluate(() => window.cascade.focus("ISO 554"));
   await page.waitForTimeout(2600);

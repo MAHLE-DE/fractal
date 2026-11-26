@@ -28,7 +28,7 @@ const esc = (s: string) =>
         c
       ]!,
   );
-const PANEL = 400;
+const PANEL = 360;
 const FOCUS_ZOOM = 34;
 let current = "",
   trail: string[] = [],
@@ -48,27 +48,8 @@ function toast(text: string) {
   gsap.to("#toast", { opacity: 0, delay: 2.5, duration: 0.3 });
 }
 function breadcrumb() {
-  $("#trail").hidden = trail.length === 0;
-  $<HTMLButtonElement>("#back").disabled = trail.length < 2;
-  $("#breadcrumbs").innerHTML = trail
-    .map(
-      (id, i) =>
-        `${i ? "<span>→</span>" : ""}<button data-crumb="${i}">${esc(id)}</button>`,
-    )
-    .join("");
-  $("#breadcrumbs")
-    .querySelectorAll<HTMLButtonElement>("button")
-    .forEach(
-      (b) =>
-        (b.onclick = () => {
-          const i = +b.dataset.crumb!;
-          const id = trail[i];
-          trail = trail.slice(0, i);
-          focus(id);
-        }),
-    );
-  const box = $("#breadcrumbs");
-  box.scrollLeft = box.scrollWidth;
+  // Sem barra de historico: so o botao Voltar, visivel quando ha para onde voltar.
+  $<HTMLButtonElement>("#back").hidden = trail.length < 2;
 }
 function back() {
   if (trail.length < 2 || pending !== current) return;
@@ -221,7 +202,6 @@ function focus(id: string) {
   $("#results").hidden = true;
   search.setAttribute("aria-expanded", "false");
   search.blur();
-  $("#overview-note").style.opacity = "0";
   const ni = byId.get(id)!,
     n = nodes[ni];
   const targetMix = 0;
@@ -239,6 +219,7 @@ function focus(id: string) {
     state,
     "rotation,zoom,anchor,runProgress,flash,panelSpace,focusBlend",
   );
+  gsap.killTweensOf(state, "rotation"); // interrompe a inercia de um arrasto
   gsap.to(state, { panelSpace: PANEL, duration: 0.6, ease: "power2.inOut" });
   state.transitionTarget = ni;
   state.focusBlend = 0;
@@ -306,7 +287,6 @@ function overview() {
   pending = "";
   panel.classList.remove("visible");
   document.body.classList.remove("panel-open");
-  $("#overview-note").style.opacity = "1";
   trail = [];
   breadcrumb();
 }
@@ -458,6 +438,10 @@ gsap.to(openAnimation, {
 });
 $("#skip").onclick = skipOpening;
 canvas.onclick = (e) => {
+  if (dragged) {
+    dragged = false;
+    return;
+  }
   if (state.opening < 1) {
     skipOpening();
     return;
@@ -476,10 +460,6 @@ canvas.onclick = (e) => {
   else overview();
 };
 $("#overview").onclick = overview;
-$("#theme").onclick = () => {
-  document.body.classList.toggle("light");
-  state.light = +document.body.classList.contains("light");
-};
 addEventListener("keydown", (e) => {
   if (e.key === "/" && document.activeElement !== search) {
     e.preventDefault();
@@ -495,18 +475,68 @@ addEventListener("keydown", (e) => {
     back();
   }
 });
+// Zoom pela roda do mouse: acumula um alvo e desliza ate ele (sem saltos entre eventos).
+let zoomTarget = 1,
+  lastWheel = 0;
 canvas.addEventListener(
   "wheel",
   (e) => {
     e.preventDefault();
-    gsap.to(state, {
-      zoom: Math.max(0.8, Math.min(60, state.zoom * Math.exp(-e.deltaY * 0.0015))),
-      duration: 0.25,
-      overwrite: "auto",
-    });
+    const now = performance.now();
+    if (now - lastWheel > 450) zoomTarget = state.zoom;
+    lastWheel = now;
+    const dy = Math.max(-150, Math.min(150, e.deltaY * (e.deltaMode === 1 ? 16 : 1)));
+    zoomTarget = Math.max(0.8, Math.min(60, zoomTarget * Math.exp(-dy * 0.0021)));
+    gsap.to(state, { zoom: zoomTarget, duration: 0.55, ease: "power3.out", overwrite: "auto" });
   },
   { passive: false },
 );
+// Arrastar com o botao esquerdo gira a roda inteira; ao soltar, continua com inercia.
+let dragged = false;
+let drag: { angle: number; moved: number; samples: { t: number; a: number }[] } | null = null;
+function pointerAngle(e: PointerEvent) {
+  const cx = (innerWidth - state.panelSpace) / 2,
+    cy = innerHeight / 2 - 0.35 * (state.zoom * state.anchor - 1) * innerHeight;
+  return Math.atan2(cy - e.clientY, e.clientX - cx);
+}
+const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+canvas.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0 || state.opening < 1 || pending !== current) return;
+  drag = { angle: pointerAngle(e), moved: 0, samples: [] };
+  dragged = false;
+});
+addEventListener("pointermove", (e) => {
+  if (!drag || !(e.buttons & 1)) return;
+  const a = pointerAngle(e),
+    d = wrapAngle(a - drag.angle);
+  drag.moved += Math.abs(e.movementX) + Math.abs(e.movementY);
+  drag.angle = a;
+  if (drag.moved < 5) return;
+  if (!dragged) {
+    dragged = true;
+    gsap.killTweensOf(state, "rotation");
+    canvas.setPointerCapture(e.pointerId);
+    document.body.classList.add("dragging");
+  }
+  state.rotation += d;
+  const t = performance.now();
+  drag.samples.push({ t, a: state.rotation });
+  drag.samples = drag.samples.filter((s) => t - s.t < 90);
+});
+addEventListener("pointerup", () => {
+  if (!drag) return;
+  if (dragged) {
+    const s = drag.samples;
+    document.body.classList.remove("dragging");
+    if (s.length > 1) {
+      const dt = s[s.length - 1].t - s[0].t;
+      const v = dt > 0 ? (s[s.length - 1].a - s[0].a) / dt : 0; // rad/ms
+      const glide = Math.max(-1.2, Math.min(1.2, v * 380));
+      gsap.to(state, { rotation: state.rotation + glide, duration: 1.1, ease: "power3.out" });
+    }
+  }
+  drag = null;
+});
 const ringCount = nodes.filter((n) => n.category !== "PUB").length + 25;
 const ringGap = new Float32Array(nodes.length);
 for (const ring of [nodes.filter((n) => n.category !== "PUB"), nodes.filter((n) => n.category === "PUB")]) {
