@@ -12,7 +12,6 @@
     <div class="brand">
       <span id="date"></span>
       <h1>Standards <em>Cascade</em></h1>
-      <p>Engineering knowledge, connected.</p>
     </div>
     <div class="search-wrap">
       <div class="search-box">
@@ -28,29 +27,20 @@
         /><kbd>/</kbd>
       </div>
       <div id="results" role="listbox" hidden></div>
-      <div id="breadcrumbs" aria-label="Navigation history"></div>
     </div>
     <div class="tools">
-      <label
-        >TRANSITION<select id="transition">
-          <option value="fiber">Fiber run</option>
-          <option value="roll">Ring roll</option>
-        </select></label
-      ><label
-        >PUBLIC STANDARDS<select id="public">
-          <option value="ring">Ring</option>
-          <option value="mixed">Mixed</option>
-        </select></label
-      ><button id="live">◉ Live motion</button
-      ><button id="theme">☼ Theme</button>
+      <button id="theme">☼ Theme</button>
     </div>
   </header>
+  <nav id="trail" aria-label="Navigation history" hidden>
+    <button id="back" title="Back (Backspace)">← Back</button>
+    <div id="breadcrumbs"></div>
+  </nav>
   <aside id="panel" aria-live="polite"></aside>
-  <div id="focus-label"></div>
   <div id="opening">
     <small>THE KNOWLEDGE BEHIND EVERY DECISION</small>
     <h2>A constellation of standards.</h2>
-    <p>595 standards. Thousands of connections. One living atlas.</p>
+    <p id="opening-count"></p>
     <button id="skip">Skip introduction →</button>
   </div>
   <div id="overview-note">
@@ -61,17 +51,9 @@
   <footer>
     <div id="legend"></div>
     <div>
-      <button id="overview">↙ Overview</button
-      ><span>SCROLL TO EXPLORE &nbsp; · &nbsp; F FOR FPS</span>
+      <button id="overview">↙ Overview</button><span>Scroll to zoom</span>
     </div>
   </footer>
-  <div id="fps" hidden></div>
   <div id="toast" role="status"></div>
-  <dialog id="file-dialog">
-    <h2>Open document</h2>
-    <p>If the browser blocked opening this file, copy its path:</p>
-    <input id="file-path" readonly /><button id="copy-path">Copy path</button
-    ><button id="close-dialog">Close</button>
-  </dialog>
   <script src="./cascade.js"></script>
 </html>

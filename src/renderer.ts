@@ -23,6 +23,7 @@ export const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
 const gl = canvas.getContext("webgl2", { alpha: false, antialias: false })!;
 const internalEdgeCount = edges.findIndex((e) => e.public);
 const internalNodeCount = nodes.findIndex((n) => n.category === "PUB");
+const ringCount = nodes.filter((n) => n.category !== "PUB").length + 25;
 if (!gl) throw Error("WebGL2 unavailable");
 function shader(type: number, code: string) {
   const s = gl.createShader(type)!;
@@ -65,9 +66,9 @@ const nodeProgram = program(
   `#version 300 es
 precision highp float;${common}
 uniform sampler2D edgeData;layout(location=0)in vec3 color;out vec3 tint;out float alpha,ratio,pix;flat out float focused;
-void main(){float id=float(gl_VertexID);vec4 n=nd(id);gl_Position=vec4(project(node(id)),0,1);float radius=1.3+sqrt(n.w)*.7;float scale=mix(1.,4.5,clamp((zoom-1.)/15.,0.,1.));radius=zoom>3.?clamp(radius*scale,9.,16.):radius;focused=max(float(id==focus)*(1.-focusBlend),float(id==transitionTarget)*(.65+.35*focusBlend));if(hover>=0.){vec4 h=texelFetch(edgeData,ivec2(0,int(hover)),0);float other=h.x==focus?h.y:h.x;focused=max(focused,float(id==other));}float pxScale=min(resolution.y/1000.,1.5);float halo=focused*(7.+2.*sin(time*2.4));float total=radius+halo+1.5;gl_PointSize=2.*total*pxScale;ratio=radius/total;pix=gl_PointSize;tint=color*mix(1.,.72,light);alpha=smoothstep(float(gl_VertexID)/${nodes.length}.+0.0,float(gl_VertexID)/${nodes.length}.+.1,opening*1.3);if(categoryFilter>=0.&&category(id)!=categoryFilter)alpha*=.07;if(n.z>1.1)alpha*=mix(texelFetch(nodeData,ivec2(gl_VertexID,1),0).w*float(focus>=0.)*.6,1.,publicMix);}`,
+void main(){float id=float(gl_VertexID);vec4 n=nd(id);gl_Position=vec4(project(node(id)),0,1);float radius=1.3+sqrt(n.w)*.7;float zb=clamp((zoom-3.)/10.,0.,1.);float big=clamp(2199.1*zoom/${ringCount}.*.2+sqrt(n.w)*.8,6.,34.);radius=mix(radius,big,zb);focused=max(float(id==focus)*(1.-focusBlend),float(id==transitionTarget)*(.65+.35*focusBlend));if(hover>=0.){vec4 h=texelFetch(edgeData,ivec2(0,int(hover)),0);float other=h.x==focus?h.y:h.x;focused=max(focused,float(id==other));}float pxScale=min(resolution.y/1000.,1.5);float halo=focused*(7.+2.*sin(time*2.4));float total=radius+halo+1.5;gl_PointSize=2.*total*pxScale;ratio=radius/total;pix=gl_PointSize;tint=color*mix(1.,.72,light);alpha=smoothstep(float(gl_VertexID)/${nodes.length}.+0.0,float(gl_VertexID)/${nodes.length}.+.1,opening*1.3);if(categoryFilter>=0.&&category(id)!=categoryFilter)alpha*=.07;if(n.z>1.1)alpha*=mix(texelFetch(nodeData,ivec2(gl_VertexID,1),0).w*.75,1.,publicMix);}`,
   `#version 300 es
-precision highp float;uniform float light;in vec3 tint;in float alpha,ratio,pix;flat in float focused;out vec4 outputColor;void main(){float d=length(gl_PointCoord-.5)*2.;float px=2./max(pix,1.);float body=1.-smoothstep(ratio-px,ratio,d);vec3 rimColor=mix(tint,vec3(1.),focused*.85);vec3 fill=mix(vec3(.071,.137,.22),vec3(.93,.95,.97),light);vec3 col=rimColor;if(pix*ratio>7.){float rim=max(px*1.7,ratio*.17);float inner=1.-smoothstep(ratio-rim-px,ratio-rim,d);col=mix(rimColor,fill,inner);}float haloD=ratio+(1.-ratio)*.45;float halo=focused*.55*exp(-pow((d-haloD)/(px*2.2),2.));vec3 outCol=mix(col,vec3(1.),halo*(1.-body));outputColor=vec4(outCol,max(body,halo)*alpha);}`,
+precision highp float;uniform float light;in vec3 tint;in float alpha,ratio,pix;flat in float focused;out vec4 outputColor;void main(){float d=length(gl_PointCoord-.5)*2.;float px=2./max(pix,1.);float body=1.-smoothstep(ratio-px,ratio,d);vec3 hi=mix(vec3(1.),vec3(.043,.129,.235),light);vec3 rimColor=mix(tint,hi,focused*.85);vec3 fill=mix(vec3(.071,.137,.22),vec3(1.),light);vec3 col=rimColor;if(pix*ratio>7.){float rim=max(px*1.7,ratio*.17);float inner=1.-smoothstep(ratio-rim-px,ratio-rim,d);col=mix(rimColor,fill,inner);}float haloD=ratio+(1.-ratio)*.45;float halo=focused*.55*exp(-pow((d-haloD)/(px*2.2),2.));vec3 outCol=mix(col,mix(vec3(1.),vec3(.09,.36,.6),light),halo*(1.-body));outputColor=vec4(outCol,max(body,halo)*alpha);}`,
 );
 function texture(unit: number, w: number, h: number, values: number[]) {
   gl.activeTexture(gl.TEXTURE0 + unit);
@@ -354,7 +355,7 @@ function draw(now: number) {
   }
   uniforms(nodeProgram, now / 1000);
   gl.bindVertexArray(nv);
-  gl.drawArrays(gl.POINTS, 0, ringOverview ? internalNodeCount : nodes.length);
+  gl.drawArrays(gl.POINTS, 0, nodes.length);
   if (state.run >= 0) {
     uniforms(runner, now / 1000);
     gl.drawArrays(gl.POINTS, 0, 1);

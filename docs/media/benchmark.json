@@ -3,21 +3,21 @@
   "gpu": "ANGLE (Intel, Intel(R) UHD Graphics 610 (0x00003EA1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
   "modes": {
     "idle": {
-      "fps": 59.996350031937226,
+      "fps": 59.99771871791947,
       "frames": 263,
       "p95ms": 16.800000000000182
     },
     "roll": {
-      "fps": 57.96382335693988,
-      "frames": 257,
-      "p95ms": 16.80000000000109
+      "fps": 58.023691182588514,
+      "frames": 265,
+      "p95ms": 16.899999999999636
     },
     "zoom": {
-      "fps": 59.99498140839928,
-      "frames": 263,
-      "p95ms": 16.80000000000109
+      "fps": 59.7650614824483,
+      "frames": 261,
+      "p95ms": 16.80000000000291
     }
   },
   "errors": [],
-  "reducedMotionDefault": false
+  "reducedMotionDefault": true
 }

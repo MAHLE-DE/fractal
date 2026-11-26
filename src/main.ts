@@ -27,6 +27,8 @@ const esc = (s: string) =>
         c
       ]!,
   );
+const PANEL = 400;
+const FOCUS_ZOOM = 34;
 let current = "",
   trail: string[] = [],
   transition = "fiber",
@@ -37,13 +39,16 @@ const search = $<HTMLInputElement>("#search");
 const panel = $("#panel");
 const panelCache = new Map<string, DocumentFragment>();
 let panelId = "";
-$("#date").textContent = `VALID-DOCUMENTS · ${raw.meta.validDocuments}`;
+$("#date").textContent = `Valid-Documents · ${raw.meta.validDocuments}`;
+$("#opening-count").textContent = `${nodes.filter((n) => n.category !== "PUB").length} standards · ${raw.edges.length} citations`;
 function toast(text: string) {
   $("#toast").textContent = text;
   gsap.to("#toast", { opacity: 1, duration: 0.2 });
   gsap.to("#toast", { opacity: 0, delay: 2.5, duration: 0.3 });
 }
 function breadcrumb() {
+  $("#trail").hidden = trail.length === 0;
+  $<HTMLButtonElement>("#back").disabled = trail.length < 2;
   $("#breadcrumbs").innerHTML = trail
     .map(
       (id, i) =>
@@ -61,7 +66,16 @@ function breadcrumb() {
           focus(id);
         }),
     );
+  const box = $("#breadcrumbs");
+  box.scrollLeft = box.scrollWidth;
 }
+function back() {
+  if (trail.length < 2 || pending !== current) return;
+  trail.pop();
+  const previous = trail.pop()!;
+  focus(previous);
+}
+$("#back").onclick = back;
 function renderPanel(id: string) {
   if (panelId === id && panel.childNodes.length) {
     panel.classList.add("visible");
@@ -179,8 +193,6 @@ function renderPanel(id: string) {
         location.href,
       ).href;
       window.open(url, "_blank");
-      $<HTMLInputElement>("#file-path").value = url;
-      $<HTMLDialogElement>("#file-dialog").showModal();
     };
 }
 function showPublic(id: string) {
@@ -198,20 +210,13 @@ function finish(id: string) {
   state.flash = 1;
   gsap.to(state, { flash: 0, duration: 0.7 });
   renderPanel(id);
-  $("#focus-label").innerHTML =
-    `<strong>${esc(id)}</strong><span>${esc(nodes[state.focus].title)}</span>`;
   if (trail.at(-1) !== id) trail.push(id);
   breadcrumb();
 }
 function focus(id: string) {
   if (!byId.has(id)) return;
-  if (
-    nodes[byId.get(id)!].category === "PUB" &&
-    !topPublic.includes(id) &&
-    state.mix < 0.99
-  ) {
-    $<HTMLSelectElement>("#public").value = "mixed";
-    gsap.to(state, { mix: 1, duration: 0.7, onComplete: () => focus(id) });
+  if (nodes[byId.get(id)!].category === "PUB" && !topPublic.includes(id)) {
+    showPublic(id);
     return;
   }
   skipOpening();
@@ -222,7 +227,7 @@ function focus(id: string) {
   $("#overview-note").style.opacity = "0";
   const ni = byId.get(id)!,
     n = nodes[ni];
-  const targetMix = $<HTMLSelectElement>("#public").value === "mixed" ? 1 : 0;
+  const targetMix = 0;
   const a = n.angle * (1 - targetMix) + n.mixed * targetMix;
   const delta = Math.atan2(
     Math.sin(-Math.PI / 2 - a - state.rotation),
@@ -237,42 +242,48 @@ function focus(id: string) {
     state,
     "rotation,zoom,anchor,runProgress,flash,panelSpace,focusBlend",
   );
-  gsap.to(state, { panelSpace: 372, duration: 0.45, ease: "power2.inOut" });
+  gsap.to(state, { panelSpace: PANEL, duration: 0.6, ease: "power2.inOut" });
   state.transitionTarget = ni;
   state.focusBlend = 0;
-  const duration = transition === "fiber" && edge >= 0 ? 1.2 : 0.9;
   state.hover = -1;
-  state.run = edge;
-  state.runProgress = edge >= 0 && edges[edge].source === current ? 0 : 1;
+  // Transicao automatica: corrida pelo fio quando ha citacao direta; rolagem no anel quando nao ha.
+  const fiber = edge >= 0 && !!current;
+  // Inercia: duracao cresce com a distancia angular; curvas de aceleracao suaves (sem arrancos).
+  const distance = Math.abs(delta) / Math.PI;
+  const rollDuration = 1.3 + 1.1 * Math.min(1, distance);
+  state.run = fiber ? edge : -1;
+  state.runProgress = fiber && edges[edge].source === current ? 0 : 1;
   state.runDirection = state.runProgress === 0 ? 1 : -1;
-  const fiber = transition === "fiber" && edge >= 0;
   if (fiber) {
+    const total = 2.6;
+    // Afasta suavemente para revelar o fio inteiro, percorre-o e volta a aproximar.
+    gsap.to(state, { zoom: 1.7, duration: 0.9, ease: "power2.inOut" });
     gsap.to(state, {
       runProgress: 1 - state.runProgress,
-      duration: 1.0,
-      delay: 0.1,
-      ease: "none",
+      duration: 1.5,
+      delay: 0.45,
+      ease: "sine.inOut",
     });
-    gsap.to(state, { zoom: 1.25, duration: 0.2, ease: "power2.out" });
+    gsap.to(state, {
+      focusBlend: 1,
+      rotation: state.rotation + delta,
+      anchor: n.radius,
+      duration: total,
+      ease: "power3.inOut",
+      onComplete: () => finish(id),
+    });
+    gsap.to(state, { zoom: FOCUS_ZOOM, duration: 1.1, delay: total - 1.1, ease: "power2.inOut" });
   } else {
-    state.run = -1;
-    if (current && transition === "fiber")
-      toast("No direct citation · using Ring roll");
+    gsap.to(state, {
+      focusBlend: 1,
+      rotation: state.rotation + delta,
+      anchor: n.radius,
+      duration: rollDuration,
+      ease: "power3.inOut",
+      onComplete: () => finish(id),
+    });
+    gsap.to(state, { zoom: FOCUS_ZOOM, duration: current ? rollDuration * 0.6 : 1.6, ease: "power2.inOut" });
   }
-  gsap.to(state, {
-    focusBlend: 1,
-    rotation: state.rotation + delta,
-    anchor: n.radius * (1 - targetMix) + targetMix,
-    duration,
-    ease: "power2.inOut",
-    onComplete: () => finish(id),
-  });
-  gsap.to(state, {
-    zoom: 14 * (1 + targetMix * (nodes.length / 595 - 1)),
-    duration: fiber ? 0.25 : duration,
-    delay: fiber ? 0.95 : 0,
-    ease: "power2.inOut",
-  });
   if (!current) {
     state.focus = ni;
     renderPanel(id);
@@ -283,7 +294,7 @@ function overview() {
   state.flash = 0;
   gsap.to(state, {
     panelSpace: 0,
-    mix: $<HTMLSelectElement>("#public").value === "mixed" ? 1 : 0,
+    mix: 0,
     zoom: 1,
     anchor: 1,
     duration: 0.9,
@@ -298,8 +309,9 @@ function overview() {
   pending = "";
   panel.classList.remove("visible");
   document.body.classList.remove("panel-open");
-  $("#focus-label").innerHTML = "";
   $("#overview-note").style.opacity = "1";
+  trail = [];
+  breadcrumb();
 }
 const documents = nodes.filter((n) => n.category !== "PUB");
 function highlight(s: string, q: string) {
@@ -384,9 +396,30 @@ function showResults() {
   }
   box
     .querySelectorAll<HTMLButtonElement>(".result")
-    .forEach((b) => (b.onclick = () => focus(results[+b.dataset.result!].id)));
+    .forEach((b) => {
+      b.onclick = () => focus(results[+b.dataset.result!].id);
+      b.onmouseenter = () => setActive(+b.dataset.result!);
+    });
   search.setAttribute("aria-activedescendant", "result-0");
 }
+function setActive(index: number) {
+  active = index;
+  $("#results")
+    .querySelectorAll(".result")
+    .forEach((b) => {
+      const selected = +(b as HTMLElement).dataset.result! === active;
+      b.classList.toggle("active", selected);
+      b.setAttribute("aria-selected", String(selected));
+    });
+  search.setAttribute("aria-activedescendant", `result-${active}`);
+}
+function closeResults() {
+  $("#results").hidden = true;
+  search.setAttribute("aria-expanded", "false");
+}
+addEventListener("pointerdown", (e) => {
+  if (!(e.target as HTMLElement).closest(".search-wrap")) closeResults();
+});
 let debounce = 0;
 search.oninput = () => {
   clearTimeout(debounce);
@@ -398,17 +431,8 @@ search.onfocus = () => {
 search.onkeydown = (e) => {
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
-    active =
-      (active + (e.key === "ArrowDown" ? 1 : -1) + results.length) %
-      results.length;
-    $("#results")
-      .querySelectorAll(".result")
-      .forEach((b, i) => {
-        const selected = +(b as HTMLElement).dataset.result! === active;
-        b.classList.toggle("active", selected);
-        b.setAttribute("aria-selected", String(selected));
-      });
-    search.setAttribute("aria-activedescendant", `result-${active}`);
+    if (results.length)
+      setActive((active + (e.key === "ArrowDown" ? 1 : -1) + results.length) % results.length);
   }
   if (e.key === "Enter" && results[active]) {
     e.preventDefault();
@@ -455,65 +479,50 @@ canvas.onclick = (e) => {
   else overview();
 };
 $("#overview").onclick = overview;
-$<HTMLSelectElement>("#transition").onchange = (e) =>
-  (transition = (e.target as HTMLSelectElement).value);
-$<HTMLSelectElement>("#public").onchange = (e) => {
-  const mix = (e.target as HTMLSelectElement).value === "mixed" ? 1 : 0;
-  const n = state.focus >= 0 ? nodes[state.focus] : null;
-  const delta = n ? (n.mixed - n.angle) * (state.mix - mix) : 0;
-  gsap.to(state, {
-    mix,
-    rotation: state.rotation + delta,
-    anchor: n ? n.radius * (1 - mix) + mix : 1,
-    duration: 1,
-    ease: "power2.inOut",
-  });
-};
-function liveLabel() {
-  $("#live").setAttribute("aria-pressed", String(state.live));
-  $("#live").textContent = state.live ? "◉ Live motion" : "○ Motion paused";
-}
-liveLabel();
-$("#live").onclick = () => {
-  state.live = !state.live;
-  liveLabel();
-};
+state.live = true;
 $("#theme").onclick = () => {
   document.body.classList.toggle("light");
   state.light = +document.body.classList.contains("light");
-};
-$("#close-dialog").onclick = () => $<HTMLDialogElement>("#file-dialog").close();
-$("#copy-path").onclick = () => {
-  const input = $<HTMLInputElement>("#file-path");
-  input.select();
-  document.execCommand("copy");
-  toast("Document path copied");
 };
 addEventListener("keydown", (e) => {
   if (e.key === "/" && document.activeElement !== search) {
     e.preventDefault();
     search.focus();
   }
-  if (e.key === "Escape") overview();
-  if (e.key.toLowerCase() === "f" && document.activeElement !== search)
-    $("#fps").toggleAttribute("hidden");
+  if (e.key === "Escape") {
+    if (!$("#results").hidden) closeResults();
+    else overview();
+  }
+  const typing = document.activeElement instanceof HTMLInputElement;
+  if (!typing && (e.key === "Backspace" || (e.altKey && e.key === "ArrowLeft"))) {
+    e.preventDefault();
+    back();
+  }
 });
 canvas.addEventListener(
   "wheel",
   (e) => {
     e.preventDefault();
     gsap.to(state, {
-      zoom: Math.max(0.8, Math.min(36, state.zoom - e.deltaY * 0.018)),
+      zoom: Math.max(0.8, Math.min(60, state.zoom * Math.exp(-e.deltaY * 0.0015))),
       duration: 0.25,
       overwrite: "auto",
     });
   },
   { passive: false },
 );
-const direction = document.createElement("div");
-direction.id = "direction";
-direction.innerHTML = "<span>↗ Requires</span><span>↙ Required by</span>";
-document.body.append(direction);
+const ringCount = nodes.filter((n) => n.category !== "PUB").length + 25;
+function cellSpacing() {
+  return (2 * Math.PI * 0.35 * innerHeight * state.zoom) / ringCount;
+}
+function cellRadius(i: number) {
+  const n = nodes[i];
+  const base = 1.3 + Math.sqrt(n.incoming) * 0.7;
+  const z = Math.min(1, Math.max(0, (state.zoom - 3) / 10));
+  const scale = Math.min((innerHeight * Math.min(devicePixelRatio, 1.25)) / 1000, 1.5) / Math.min(devicePixelRatio, 1.25);
+  const big = Math.min(34, Math.max(6, ((2 * Math.PI * 0.35 * 1000 * state.zoom) / ringCount) * 0.2 + Math.sqrt(n.incoming) * 0.8));
+  return (base * (1 - z) + big * z) * scale;
+}
 const labelCanvas = $<HTMLCanvasElement>("#labels"),
   ctx = labelCanvas.getContext("2d")!;
 const categories = base.children!;
@@ -558,7 +567,7 @@ function codeLabel(id: string, category: string) {
 const inset = document.createElement("canvas");
 inset.id = "focus-inset";
 inset.width = 220;
-inset.height = 240;
+inset.height = 270;
 inset.setAttribute(
   "aria-label",
   "Overview of focus citations: warm requires, cool required by",
@@ -628,7 +637,7 @@ function drawFocusContext(t: number, stageWidth: number) {
   const links = edges
     .map((e, i) => ({ e, i }))
     .filter(({ e }) => e.source === id || e.target === id);
-  mini.clearRect(0, 0, 220, 240);
+  mini.clearRect(0, 0, 220, 270);
   mini.fillStyle = state.light ? "#213954" : "#bdcde0";
   mini.font = "600 10px 'Segoe UI', sans-serif";
   mini.textAlign = "left";
@@ -700,8 +709,8 @@ function drawFocusContext(t: number, stageWidth: number) {
   const marker =
     state.transitionTarget >= 0 ? state.transitionTarget : state.focus;
   const p = worldPoint(marker, t);
-  mini.fillStyle = "#ffffff";
-  mini.strokeStyle = "#ffe3a3";
+  mini.fillStyle = state.light ? "#0b213c" : "#ffffff";
+  mini.strokeStyle = state.light ? "#916000" : "#ffe3a3";
   mini.lineWidth = 2;
   mini.beginPath();
   mini.arc(110 + p[0] * 80, 127 - p[1] * 80, 4.5, 0, Math.PI * 2);
@@ -711,6 +720,20 @@ function drawFocusContext(t: number, stageWidth: number) {
   mini.font = "700 11px 'Segoe UI', sans-serif";
   mini.textAlign = "center";
   mini.fillText(nodes[marker].id, 110, 226);
+  // Legenda de direcao dentro do mini-mapa (nao sobrepoe o palco).
+  mini.font = "600 10.5px 'Segoe UI', sans-serif";
+  mini.textAlign = "left";
+  const legend: [string, string][] = [
+    ["Requires", state.light ? "#916000" : "#ffe3a3"],
+    ["Required by", state.light ? "#00798f" : "#7fe8ff"],
+  ];
+  legend.forEach(([label, color], k) => {
+    const x = 24 + k * 96;
+    mini.fillStyle = color;
+    mini.fillRect(x, 251, 16, 3);
+    mini.fillStyle = state.light ? "#213954" : "#c9d7e7";
+    mini.fillText(label, x + 22, 256);
+  });
   const unique = [...new Map(offscreen.map((x) => [x.id, x])).values()];
   const key = unique.map((x) => x.id + ":" + x.edge).join("|");
   edgeLabels.style.right = `${state.panelSpace + 22}px`;
@@ -739,7 +762,6 @@ function drawFocusContext(t: number, stageWidth: number) {
 
 document.fonts.ready.then(() => codeLabels.clear());
 setOverlay((t) => {
-  direction.style.opacity = state.focus >= 0 ? "1" : "0";
   labelCounter++;
   // O texto só se desloca perceptivelmente durante uma transição. A oscilação
   // lenta atualiza rótulos a 15 Hz; células e fibras continuam em cada quadro.
@@ -761,8 +783,6 @@ setOverlay((t) => {
     hover: state.hover,
   };
   const stageWidth = innerWidth - state.panelSpace;
-  direction.style.left = `${stageWidth / 2}px`;
-  $("#focus-label").style.left = `${stageWidth / 2}px`;
   // The inset is a locator: 15 Hz is sufficient; main GPU fibers stay at RAF rate.
   if (labelCounter % 4 === 0 || state.hover !== lastContextHover) {
     drawFocusContext(t, stageWidth);
@@ -808,29 +828,54 @@ setOverlay((t) => {
       ctx.fillStyle = labelColor(cat);
       ctx.fillText(`${cat} ${leaves.length}`, x, y);
     }
-  } else if (state.zoom >= 8 * (1 + state.mix * (nodes.length / 595 - 1))) {
+  } else if (state.zoom >= 6) {
+    const hoverEdge = state.hover >= 0 ? edges[state.hover] : null;
+    // Celulas visiveis ordenadas na horizontal: cada rotulo usa so o espaco ate as vizinhas (sem sobreposicao).
+    const visible: { i: number; x: number; y: number }[] = [];
     nodes.forEach((n, i) => {
-      if (n.category === "PUB" && state.mix < 0.5) return;
+      if (n.category === "PUB") return;
       const p = screenPosition(i, t);
-      if (
-        p.x < 30 ||
-        p.x > stageWidth - 20 ||
-        p.y < 160 ||
-        p.y > innerHeight - 100 ||
-        i === state.focus
-      )
-        return;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(-p.angle);
-      ctx.textAlign = "right";
-      ctx.font = "600 11px 'Segoe UI', sans-serif";
-      ctx.fillStyle = labelColor(n.category);
-      ctx.shadowColor = state.light ? "#ffffff" : "#0b1220";
-      ctx.shadowBlur = 0;
-      const label = codeLabel(n.id, n.category);
-      ctx.drawImage(label, -20 - label.width, -14);
-      ctx.restore();
+      if (p.x < -80 || p.x > stageWidth + 80 || p.y < 110 || p.y > innerHeight - 30) return;
+      visible.push({ i, x: p.x, y: p.y });
+    });
+    visible.sort((a, b) => a.x - b.x);
+    const wrap = (text: string, width: number) => {
+      const words = text.split(" ");
+      const lines: string[] = [];
+      let line = "";
+      for (const w of words) {
+        const next = line ? line + " " + w : w;
+        if (line && ctx.measureText(next).width > width) {
+          lines.push(line);
+          line = w;
+        } else line = next;
+      }
+      if (line) lines.push(line);
+      if (lines.length > 2) {
+        let last = lines[1];
+        while (last && ctx.measureText(last + "…").width > width) last = last.replace(/\s*\S+$/, "");
+        return [lines[0], (last || lines[1]) + "…"];
+      }
+      return lines;
+    };
+    visible.forEach((v, k) => {
+      const n = nodes[v.i];
+      const gapLeft = k ? v.x - visible[k - 1].x : 999;
+      const gapRight = k < visible.length - 1 ? visible[k + 1].x - v.x : 999;
+      const room = Math.min(160, Math.min(gapLeft, gapRight) - 10);
+      if (room < 34) return;
+      const r = cellRadius(v.i);
+      const focused = v.i === state.focus || v.i === state.transitionTarget;
+      const hot = focused || (!!hoverEdge && (hoverEdge.source === n.id || hoverEdge.target === n.id));
+      ctx.textAlign = "center";
+      ctx.font = `${hot ? 700 : 600} ${focused ? 14 : 12}px 'Segoe UI', sans-serif`;
+      ctx.fillStyle = focused ? (state.light ? "#0b213c" : "#ffffff") : labelColor(n.category);
+      ctx.fillText(n.id, v.x, v.y + r + 17, room);
+      if (state.zoom >= 18 && n.title && room >= 64) {
+        ctx.font = "400 11px 'Segoe UI', sans-serif";
+        ctx.fillStyle = state.light ? "#3d556f" : "#a9bbcf";
+        wrap(n.title, room).forEach((l, q) => ctx.fillText(l, v.x, v.y + r + 33 + q * 14, room));
+      }
     });
   }
   if (state.focus >= 0 && state.zoom < 3) {
@@ -872,11 +917,6 @@ setOverlay((t) => {
     ctx.strokeStyle = `rgba(210,240,255,${state.flash})`;
     ctx.lineWidth = 2;
     ctx.stroke();
-  }
-  if (labelCounter % 20 === 0 && !$("#fps").hidden) {
-    const s = samples.slice(-120);
-    $("#fps").textContent =
-      `${(1000 / (s.reduce((a, b) => a + b, 0) / s.length)).toFixed(1)} FPS · ${raw.edges.length} citation fibers`;
   }
 });
 $("#legend").innerHTML = Object.entries(palette)
