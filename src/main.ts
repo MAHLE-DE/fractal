@@ -188,6 +188,8 @@ function showPublic(id: string) {
 }
 function finish(id: string) {
   current = id;
+  state.transitionTarget = -1;
+  state.focusBlend = 0;
   state.focus = byId.get(id)!;
   state.run = -1;
   state.flash = 1;
@@ -217,7 +219,8 @@ function focus(id: string) {
   $("#overview-note").style.opacity = "0";
   const ni = byId.get(id)!,
     n = nodes[ni];
-  const a = n.angle * (1 - state.mix) + n.mixed * state.mix;
+  const targetMix = $<HTMLSelectElement>("#public").value === "mixed" ? 1 : 0;
+  const a = n.angle * (1 - targetMix) + n.mixed * targetMix;
   const delta = Math.atan2(
     Math.sin(-Math.PI / 2 - a - state.rotation),
     Math.cos(-Math.PI / 2 - a - state.rotation),
@@ -227,7 +230,13 @@ function focus(id: string) {
       (e.source === current && e.target === id) ||
       (e.target === current && e.source === id),
   );
-  gsap.killTweensOf(state);
+  gsap.killTweensOf(
+    state,
+    "rotation,zoom,anchor,runProgress,flash,panelSpace,focusBlend",
+  );
+  gsap.to(state, { panelSpace: 400, duration: 0.45, ease: "power2.inOut" });
+  state.transitionTarget = ni;
+  state.focusBlend = 0;
   const duration = transition === "fiber" && edge >= 0 ? 1.2 : 0.9;
   state.hover = -1;
   state.run = edge;
@@ -248,14 +257,15 @@ function focus(id: string) {
       toast("No direct citation · using Ring roll");
   }
   gsap.to(state, {
+    focusBlend: 1,
     rotation: state.rotation + delta,
-    anchor: n.radius * (1 - state.mix) + state.mix,
+    anchor: n.radius * (1 - targetMix) + targetMix,
     duration,
     ease: "power2.inOut",
     onComplete: () => finish(id),
   });
   gsap.to(state, {
-    zoom: 14 * (1 + state.mix * (nodes.length / 595 - 1)),
+    zoom: 14 * (1 + targetMix * (nodes.length / 595 - 1)),
     duration: fiber ? 0.25 : duration,
     delay: fiber ? 0.95 : 0,
     ease: "power2.inOut",
@@ -267,7 +277,17 @@ function focus(id: string) {
 }
 function overview() {
   gsap.killTweensOf(state);
-  gsap.to(state, { zoom: 1, anchor: 1, duration: 0.9, ease: "power2.inOut" });
+  state.flash = 0;
+  gsap.to(state, {
+    panelSpace: 0,
+    mix: $<HTMLSelectElement>("#public").value === "mixed" ? 1 : 0,
+    zoom: 1,
+    anchor: 1,
+    duration: 0.9,
+    ease: "power2.inOut",
+  });
+  state.transitionTarget = -1;
+  state.focusBlend = 0;
   state.focus = -1;
   state.run = -1;
   state.hover = -1;
@@ -505,23 +525,214 @@ function labelColor(category: string) {
     : palette[category];
 }
 let labelCounter = 0;
-let labelView = { zoom: NaN, rotation: NaN, mix: NaN };
+let labelView = {
+  zoom: NaN,
+  rotation: NaN,
+  mix: NaN,
+  panelSpace: NaN,
+  hover: -1,
+};
 const codeLabels = new Map<string, HTMLCanvasElement>();
 function codeLabel(id: string, category: string) {
-  const key = id + state.light;
+  const bold =
+    state.hover >= 0 &&
+    (edges[state.hover].source === id || edges[state.hover].target === id);
+  const key = id + state.light + bold;
   if (!codeLabels.has(key)) {
     const label = document.createElement("canvas"),
       c = label.getContext("2d")!;
-    c.font = "11px Mono";
+    c.font = `${bold ? "bold " : ""}11px Mono`;
     label.width = Math.ceil(c.measureText(id).width) + 4;
     label.height = 20;
-    c.font = "11px Mono";
+    c.font = `${bold ? "bold " : ""}11px Mono`;
     c.fillStyle = labelColor(category);
     c.fillText(id, 2, 14);
     codeLabels.set(key, label);
   }
   return codeLabels.get(key)!;
 }
+const inset = document.createElement("canvas");
+inset.id = "focus-inset";
+inset.width = 220;
+inset.height = 240;
+inset.setAttribute(
+  "aria-label",
+  "Overview of focus citations: warm requires, cool required by",
+);
+document.body.append(inset);
+const mini = inset.getContext("2d")!;
+const edgeLabels = document.createElement("div");
+edgeLabels.id = "edge-labels";
+edgeLabels.setAttribute("aria-label", "Offscreen citation destinations");
+document.body.append(edgeLabels);
+let edgeLabelsKey = "";
+let lastContextHover = -2;
+function worldPoint(id: number, t: number, rotated = true) {
+  const n = nodes[id];
+  const a =
+    n.angle * (1 - state.mix) +
+    n.mixed * state.mix +
+    (rotated ? state.rotation : 0) +
+    (state.live && rotated
+      ? 0.0017 * Math.sin(t * (0.17 + ((id * 0.618) % 1) * 0.23) + id * 2.399)
+      : 0);
+  const r = n.radius * (1 - state.mix) + state.mix;
+  return [Math.cos(a) * r, Math.sin(a) * r];
+}
+const miniCurves = new Map<number, { mix: number; points: number[][] }>();
+function focusCurve(index: number) {
+  const cached = miniCurves.get(index);
+  if (cached && cached.mix === state.mix) return cached.points;
+  const e = edges[index],
+    start = worldPoint(byId.get(e.source)!, 0, false),
+    end = worldPoint(byId.get(e.target)!, 0, false);
+  const controls = e.controls.map((c, j) => {
+    const a = c[0] * (1 - state.mix) + c[1] * state.mix;
+    const point =
+      c[3] > 0
+        ? worldPoint(c[3] - 1, 0, false)
+        : [Math.cos(a) * c[2], Math.sin(a) * c[2]];
+    const u = j / (e.controls.length - 1);
+    return point.map(
+      (v, k) => (start[k] * (1 - u) + end[k] * u) * 0.15 + v * 0.85,
+    );
+  });
+  const cp = (j: number) =>
+    controls[Math.max(0, Math.min(controls.length - 1, j))];
+  const points = Array.from({ length: 33 }, (_, i) => {
+    const u = Math.min(i / 32, 0.999999) * (controls.length + 1),
+      k = Math.floor(u) - 2,
+      f = u % 1;
+    return [0, 1].map(
+      (axis) =>
+        (cp(k)[axis] * (1 - f) ** 3 +
+          cp(k + 1)[axis] * (3 * f ** 3 - 6 * f * f + 4) +
+          cp(k + 2)[axis] * (-3 * f ** 3 + 3 * f * f + 3 * f + 1) +
+          cp(k + 3)[axis] * f ** 3) /
+        6,
+    );
+  });
+  miniCurves.set(index, { mix: state.mix, points });
+  return points;
+}
+function drawFocusContext(t: number, stageWidth: number) {
+  const shown = state.focus >= 0;
+  inset.hidden = !shown;
+  edgeLabels.hidden = !shown || state.zoom < 3;
+  if (!shown) return;
+  const id = nodes[state.focus].id;
+  const links = edges
+    .map((e, i) => ({ e, i }))
+    .filter(({ e }) => e.source === id || e.target === id);
+  mini.clearRect(0, 0, 220, 240);
+  mini.fillStyle = state.light ? "#213954" : "#bdcde0";
+  mini.font = "10px Mono";
+  mini.textAlign = "left";
+  mini.fillText("FOCUS CONNECTIONS", 14, 22);
+  mini.strokeStyle = state.light ? "#8c9cad" : "#334a65";
+  mini.lineWidth = 1;
+  mini.beginPath();
+  mini.arc(110, 127, 80, 0, Math.PI * 2);
+  mini.stroke();
+  if (state.mix < 0.5) {
+    mini.strokeStyle = state.light ? "#acb8c6" : "#2c3c50";
+    mini.beginPath();
+    mini.arc(110, 127, 94.4, 0, Math.PI * 2);
+    mini.stroke();
+  }
+  for (let i = 0; i < 595; i++) {
+    const p = worldPoint(i, t);
+    mini.fillStyle = palette[nodes[i].category];
+    mini.fillRect(110 + p[0] * 80, 127 - p[1] * 80, 1.3, 1.3);
+  }
+  const offscreen: { id: string; edge: number }[] = [];
+  for (const { e, i } of links) {
+    const target = e.source === id ? e.target : e.source,
+      other = byId.get(target)!;
+    if (
+      nodes[other].category === "PUB" &&
+      state.mix < 0.5 &&
+      !topPublic.includes(target)
+    )
+      continue;
+    const hovered = i === state.hover;
+    const points = focusCurve(i);
+    mini.strokeStyle =
+      e.source === id
+        ? state.light
+          ? "#916000"
+          : "#ffe3a3"
+        : state.light
+          ? "#00798f"
+          : "#7fe8ff";
+    mini.globalAlpha = state.hover >= 0 && !hovered ? 0.15 : 0.8;
+    mini.lineWidth = hovered ? 2.8 : 1;
+    mini.beginPath();
+    const cos = Math.cos(state.rotation),
+      sin = Math.sin(state.rotation);
+    points.forEach((p, j) => {
+      const x = 110 + (p[0] * cos - p[1] * sin) * 80,
+        y = 127 - (p[0] * sin + p[1] * cos) * 80;
+      if (j) mini.lineTo(x, y);
+      else mini.moveTo(x, y);
+    });
+    mini.stroke();
+    const p = screenPosition(other, t);
+    if (
+      p.x < 18 ||
+      p.x > stageWidth - 18 ||
+      p.y < 155 ||
+      p.y > innerHeight - 100
+    )
+      offscreen.push({ id: target, edge: i });
+    if (hovered) {
+      const q = worldPoint(other, t);
+      mini.beginPath();
+      mini.arc(110 + q[0] * 80, 127 - q[1] * 80, 5, 0, Math.PI * 2);
+      mini.stroke();
+    }
+  }
+  mini.globalAlpha = 1;
+  const marker =
+    state.transitionTarget >= 0 ? state.transitionTarget : state.focus;
+  const p = worldPoint(marker, t);
+  mini.fillStyle = "#ffffff";
+  mini.strokeStyle = "#ffe3a3";
+  mini.lineWidth = 2;
+  mini.beginPath();
+  mini.arc(110 + p[0] * 80, 127 - p[1] * 80, 4.5, 0, Math.PI * 2);
+  mini.fill();
+  mini.stroke();
+  mini.fillStyle = state.light ? "#213954" : "#e7f0fc";
+  mini.font = "bold 11px Mono";
+  mini.textAlign = "center";
+  mini.fillText(nodes[marker].id, 110, 226);
+  const unique = [...new Map(offscreen.map((x) => [x.id, x])).values()];
+  const key = unique.map((x) => x.id + ":" + x.edge).join("|");
+  edgeLabels.style.right = `${state.panelSpace + 22}px`;
+  if (key !== edgeLabelsKey) {
+    edgeLabelsKey = key;
+    edgeLabels.innerHTML = unique
+      .map(
+        (x) =>
+          `<button data-edge="${x.edge}" data-target="${esc(x.id)}" style="--tint:${palette[nodes[byId.get(x.id)!].category]}"><span style="color:${edges[x.edge].source === id ? "#ffe3a3" : "#7fe8ff"}">${edges[x.edge].source === id ? "↗" : "↙"}</span> ${esc(x.id)}</button>`,
+      )
+      .join("");
+    edgeLabels.querySelectorAll<HTMLButtonElement>("button").forEach((b) => {
+      b.onmouseenter = () => (state.hover = +b.dataset.edge!);
+      b.onmouseleave = () => (state.hover = -1);
+      b.onclick = () => focus(b.dataset.target!);
+    });
+  }
+  edgeLabels.querySelectorAll<HTMLButtonElement>("button").forEach((b) => {
+    const e = state.hover >= 0 ? edges[state.hover] : null;
+    b.classList.toggle(
+      "hovered",
+      !!e && (e.source === b.dataset.target || e.target === b.dataset.target),
+    );
+  });
+}
+
 document.fonts.ready.then(() => codeLabels.clear());
 setOverlay((t) => {
   direction.style.opacity = state.focus >= 0 ? "1" : "0";
@@ -532,10 +743,27 @@ setOverlay((t) => {
     state.zoom !== labelView.zoom ||
     state.rotation !== labelView.rotation ||
     state.mix !== labelView.mix ||
+    state.panelSpace !== labelView.panelSpace ||
+    state.hover !== labelView.hover ||
+    state.transitionTarget >= 0 ||
     state.opening < 1 ||
     state.flash > 0;
   if (!moving && labelCounter % 4 !== 0) return;
-  labelView = { zoom: state.zoom, rotation: state.rotation, mix: state.mix };
+  labelView = {
+    zoom: state.zoom,
+    rotation: state.rotation,
+    mix: state.mix,
+    panelSpace: state.panelSpace,
+    hover: state.hover,
+  };
+  const stageWidth = innerWidth - state.panelSpace;
+  direction.style.left = `${stageWidth / 2}px`;
+  $("#focus-label").style.left = `${stageWidth / 2}px`;
+  // The inset is a locator: 15 Hz is sufficient; main GPU fibers stay at RAF rate.
+  if (labelCounter % 4 === 0 || state.hover !== lastContextHover) {
+    drawFocusContext(t, stageWidth);
+    lastContextHover = state.hover;
+  }
   (labelCanvas.width === innerWidth && labelCanvas.height === innerHeight) ||
     Object.assign(labelCanvas, { width: innerWidth, height: innerHeight });
   ctx.clearRect(0, 0, innerWidth, innerHeight);
@@ -555,12 +783,21 @@ setOverlay((t) => {
             leaves.length +
           state.rotation,
         r = innerHeight * 0.35 * state.zoom + 35;
-      let x = innerWidth / 2 + Math.cos(a) * r,
+      let x = stageWidth / 2 + Math.cos(a) * r,
         y =
           innerHeight / 2 -
           0.35 * (state.zoom * state.anchor - 1) * innerHeight -
           Math.sin(a) * r;
+      if (cat === "TEST") {
+        x -= 22;
+        y += 8;
+      }
+      if (cat === "W") {
+        x += 32;
+        y += 12;
+      }
       for (const p of placed) if (Math.hypot(x - p.x, y - p.y) < 75) y += 34;
+      if (state.focus >= 0 && y > innerHeight - 145) continue;
       placed.push({ x, y });
       ctx.font = "600 15px Display";
       ctx.textAlign = "center";
@@ -573,7 +810,7 @@ setOverlay((t) => {
       const p = screenPosition(i, t);
       if (
         p.x < 30 ||
-        p.x > innerWidth - 390 ||
+        p.x > stageWidth - 20 ||
         p.y < 160 ||
         p.y > innerHeight - 100 ||
         i === state.focus
@@ -608,7 +845,7 @@ setOverlay((t) => {
       const p = screenPosition(i, t);
       if (
         p.x < 30 ||
-        p.x > innerWidth - 380 ||
+        p.x > stageWidth - 20 ||
         p.y < 160 ||
         p.y > innerHeight - 155
       )
@@ -672,6 +909,9 @@ $("#legend")
   edges,
   renderer,
   searchItems,
+  pauseAnimations: (paused: boolean) => {
+    gsap.globalTimeline.paused(paused);
+  },
   configureDocuments: (folder: string) =>
     localStorage.setItem("cascade-documents-root", folder),
   get current() {

@@ -1,5 +1,8 @@
 import { nodes, edges, palette, byId, topPublic } from "./model";
 export const state = {
+  panelSpace: 0,
+  transitionTarget: -1,
+  focusBlend: 0,
   rotation: 0,
   zoom: 1,
   anchor: 1,
@@ -18,6 +21,8 @@ export const state = {
 export const samples: number[] = [];
 export const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
 const gl = canvas.getContext("webgl2", { alpha: false, antialias: false })!;
+const internalEdgeCount = edges.findIndex((e) => e.public);
+const internalNodeCount = nodes.findIndex((n) => n.category === "PUB");
 if (!gl) throw Error("WebGL2 unavailable");
 function shader(type: number, code: string) {
   const s = gl.createShader(type)!;
@@ -36,7 +41,7 @@ function program(v: string, f: string) {
     throw Error(gl.getProgramInfoLog(p)!);
   return p;
 }
-const common = `uniform float time,rotation,zoom,anchor,light,publicMix,live,opening,focus,hover,run,runProgress,runDirection,flash,categoryFilter;uniform vec2 resolution;uniform sampler2D nodeData;
+const common = `uniform float panelSpace,transitionTarget,focusBlend,time,rotation,zoom,anchor,light,publicMix,live,opening,focus,hover,run,runProgress,runDirection,flash,categoryFilter;uniform vec2 resolution;uniform sampler2D nodeData;
 vec4 nd(float id){return texelFetch(nodeData,ivec2(int(id),0),0);}
 float category(float id){return texelFetch(nodeData,ivec2(int(id),1),0).x;}
 float ang(float id){vec4 n=nd(id);return mix(n.x,n.y,publicMix)+rotation+live*.0017*sin(time*(.17+fract(id*.618)*.23)+id*2.399);}
@@ -51,18 +56,18 @@ vec2 cp(int j){return texelFetch(dynamicControls,ivec2(clamp(j,0,int(edgeInfo.z)
 vec2 curve(float t,out vec2 tangent){float u=clamp(t,0.,.999999)*float(int(edgeInfo.z)+1);int k=int(floor(u))-2;float f=fract(u),f2=f*f,f3=f2*f;vec2 a=cp(k),b=cp(k+1),c=cp(k+2),d=cp(k+3);tangent=a*(-.5*(1.-f)*(1.-f))+b*(1.5*f2-2.*f)+c*(-1.5*f2+f+.5)+d*(.5*f2);return (a*pow(1.-f,3.)+b*(3.*f3-6.*f2+4.)+c*(-3.*f3+3.*f2+3.*f+1.)+d*f3)/6.;}
 void main(){if((width>2.&&focus>=0.&&edgeInfo.x!=focus&&edgeInfo.y!=focus&&float(gl_InstanceID)!=hover&&float(gl_InstanceID)!=run)||(edgeInfo.w>.5&&publicMix<.001&&edgeInfo.x!=focus&&edgeInfo.y!=focus)){gl_Position=vec4(2,2,0,1);alpha=0.;tint=vec3(0);progress=0.;edgeID=-1.;selected=0.;return;}float t=float(gl_VertexID/2)/segments;vec2 tangent;vec2 p=project(curve(t,tangent));float len=length(tangent);vec2 normal=len>0.000001?vec2(-tangent.y,tangent.x)/len:vec2(0.,1.);
 float outgoing=float(edgeInfo.x==focus),incoming=float(edgeInfo.y==focus);selected=max(outgoing,incoming);float h=float(float(gl_InstanceID)==hover);float running=float(float(gl_InstanceID)==run);
-alpha=focus<0.?1.:mix(.22,1.,selected);if(categoryFilter>=0.&&category(edgeInfo.x)!=categoryFilter&&category(edgeInfo.y)!=categoryFilter)alpha*=.03;if(edgeInfo.w>0.5)alpha*=focus<0.?publicMix:selected;if(edgeInfo.w>.5&&publicMix<.001&&texelFetch(nodeData,ivec2(int(edgeInfo.y),1),0).w<.5)alpha=0.;alpha*=smoothstep(.1,.75,opening);tint=mix(color,vec3(.35,1.,.77),outgoing*.8);tint=mix(tint,vec3(1.,.57,.84),incoming*.8);tint=mix(tint,vec3(.9,.97,1.),h*.8);tint*=mix(1.,.58,light);alpha=max(alpha,h);strokeWidth=width+selected*.35+h*.6;lateral=float(gl_VertexID%2)*2.-1.;p+=normal*lateral*(strokeWidth+2.)/resolution;gl_Position=vec4(p,0,1);progress=t;edgeID=float(gl_InstanceID);selected=max(h,running);}`,
+alpha=focus<0.?1.:mix(.22,1.,selected);if(categoryFilter>=0.&&category(edgeInfo.x)!=categoryFilter&&category(edgeInfo.y)!=categoryFilter)alpha*=.03;if(edgeInfo.w>0.5)alpha*=focus<0.?publicMix:selected;if(edgeInfo.w>.5&&publicMix<.001&&texelFetch(nodeData,ivec2(int(edgeInfo.y),1),0).w<.5)alpha=0.;alpha*=smoothstep(.1,.75,opening);tint=mix(color,vec3(1.,.89,.64),outgoing);tint=mix(tint,vec3(.50,.91,1.),incoming);tint*=mix(1.,.58,light);if(hover>=0.&&selected>.5)alpha*=mix(.16,1.,h);alpha=max(alpha,h);strokeWidth=(width+selected*.35)*mix(1.,3.,h);lateral=float(gl_VertexID%2)*2.-1.;p+=normal*lateral*(strokeWidth+2.)/resolution;gl_Position=vec4(p,0,1);progress=t;edgeID=float(gl_InstanceID);selected=max(h,running);}`,
   `#version 300 es
-precision highp float;in vec3 tint;in float progress,alpha,lateral,strokeWidth;flat in float edgeID;flat in float selected;uniform float time,opacity,run,runProgress,runDirection,opening;out vec4 outputColor;
-void main(){float reveal=opening>=1.?1.:1.-smoothstep(max(0.,opening-.1)*.60,max(0.,opening-.1)*.60+.04,abs(progress-.5));float coverage=reveal*(1.-smoothstep(strokeWidth*.5-.5,strokeWidth*.5+.5,abs(lateral)*(strokeWidth+2.)*.5));if(alpha<.3){outputColor=vec4(tint,opacity*alpha*coverage);return;}float breath=.90+.10*sin(time*.6+edgeID*.31);float pulse=fract(edgeID*.371)>.95?exp(-pow((progress-fract(time*.10+edgeID*.0618))*65.,2.)):0.;float d=(progress-runProgress)*runDirection;float travel=edgeID==run?exp(-pow(d*30.,2.))*7.+step(-.15,d)*step(d,0.)*exp(d*25.)*2.:0.;outputColor=vec4(tint*(breath+pulse*2.+travel+selected*.7),opacity*alpha*coverage);}`,
+precision highp float;in vec3 tint;in float progress,alpha,lateral,strokeWidth;flat in float edgeID;flat in float selected;uniform float time,opacity,hover,run,runProgress,runDirection,opening;out vec4 outputColor;
+void main(){float reveal=opening>=1.?1.:1.-smoothstep(max(0.,opening-.1)*.60,max(0.,opening-.1)*.60+.04,abs(progress-.5));float coverage=reveal*(1.-smoothstep(strokeWidth*.5-.5,strokeWidth*.5+.5,abs(lateral)*(strokeWidth+2.)*.5));if(alpha<.3){outputColor=vec4(tint,opacity*alpha*coverage);return;}float breath=.90+.10*sin(time*.6+edgeID*.31);float pulse=fract(edgeID*.371)>.95?exp(-pow((progress-fract(time*.10+edgeID*.0618))*65.,2.)):0.;if(edgeID==hover)pulse+=exp(-pow((progress-fract(time*.65))*25.,2.))*5.;float d=(progress-runProgress)*runDirection;float travel=edgeID==run?exp(-pow(d*30.,2.))*7.+step(-.15,d)*step(d,0.)*exp(d*25.)*2.:0.;outputColor=vec4(tint*(breath+pulse*2.+travel+selected*.7),opacity*alpha*coverage);}`,
 );
 const nodeProgram = program(
   `#version 300 es
 precision highp float;${common}
-layout(location=0)in vec3 color;out vec3 tint;out float alpha;flat out float focused;
-void main(){float id=float(gl_VertexID);vec4 n=nd(id);gl_Position=vec4(project(node(id)),0,1);float radius=1.3+sqrt(n.w)*.7;float scale=mix(1.,4.5,clamp((zoom-1.)/15.,0.,1.));radius=zoom>3.?clamp(radius*scale,8.,14.):radius;focused=float(id==focus);gl_PointSize=2.*(radius+focused*(6.+3.*sin(time*3.)))*min(resolution.y/1000.,1.5);tint=color*mix(1.,.58,light);alpha=smoothstep(float(gl_VertexID)/${nodes.length}.+0.0,float(gl_VertexID)/${nodes.length}.+.1,opening*1.3);if(categoryFilter>=0.&&category(id)!=categoryFilter)alpha*=.07;if(n.z>1.1)alpha*=mix(texelFetch(nodeData,ivec2(gl_VertexID,1),0).w*.5,1.,publicMix);}`,
+uniform sampler2D edgeData;layout(location=0)in vec3 color;out vec3 tint;out float alpha;flat out float focused;
+void main(){float id=float(gl_VertexID);vec4 n=nd(id);gl_Position=vec4(project(node(id)),0,1);float radius=1.3+sqrt(n.w)*.7;float scale=mix(1.,4.5,clamp((zoom-1.)/15.,0.,1.));radius=zoom>3.?clamp(radius*scale,8.,14.):radius;focused=max(float(id==focus)*(1.-focusBlend),float(id==transitionTarget)*(.65+.35*focusBlend));if(hover>=0.){vec4 h=texelFetch(edgeData,ivec2(0,int(hover)),0);float other=h.x==focus?h.y:h.x;focused=max(focused,float(id==other));}gl_PointSize=2.*(radius+focused*(6.+3.*sin(time*3.)))*min(resolution.y/1000.,1.5);tint=color*mix(1.,.58,light);alpha=smoothstep(float(gl_VertexID)/${nodes.length}.+0.0,float(gl_VertexID)/${nodes.length}.+.1,opening*1.3);if(categoryFilter>=0.&&category(id)!=categoryFilter)alpha*=.07;if(n.z>1.1)alpha*=mix(texelFetch(nodeData,ivec2(gl_VertexID,1),0).w*float(focus>=0.)*.6,1.,publicMix);}`,
   `#version 300 es
-precision highp float;in vec3 tint;in float alpha;flat in float focused;out vec4 outputColor;void main(){float d=length(gl_PointCoord-.5)*2.;float a=1.-smoothstep(.55,1.,d);if(focused>.5)a=max(a,exp(-pow((d-.82)*22.,2.)));outputColor=vec4(tint*(1.+focused*.6),a*alpha);}`,
+precision highp float;in vec3 tint;in float alpha;flat in float focused;out vec4 outputColor;void main(){float d=length(gl_PointCoord-.5)*2.;float a=1.-smoothstep(.55,1.,d);if(focused>0.)a=max(a,focused*exp(-pow((d-.82)*22.,2.)));outputColor=vec4(tint*(1.+focused*.6),a*alpha);}`,
 );
 function texture(unit: number, w: number, h: number, values: number[]) {
   gl.activeTexture(gl.TEXTURE0 + unit);
@@ -258,7 +263,7 @@ export function screenPosition(id: number, t = performance.now() / 1000) {
       innerHeight) /
     2;
   return {
-    x: innerWidth / 2 + Math.cos(angle) * radius,
+    x: (innerWidth - state.panelSpace) / 2 + Math.cos(angle) * radius,
     y:
       innerHeight / 2 -
       (0.7 * (state.zoom * state.anchor - 1) * innerHeight) / 2 -
@@ -276,15 +281,20 @@ function draw(now: number) {
   if (samples.length > 600) samples.shift();
   last = now;
   const dpr = Math.min(devicePixelRatio, 1.25);
-  (canvas.width === Math.round(innerWidth * dpr) &&
+  const stageWidth = Math.max(320, innerWidth - state.panelSpace);
+  if (canvas.style.width !== `${stageWidth}px`)
+    canvas.style.width = `${stageWidth}px`;
+  (canvas.width === Math.round(stageWidth * dpr) &&
     canvas.height === Math.round(innerHeight * dpr)) ||
     Object.assign(canvas, {
-      width: Math.round(innerWidth * dpr),
+      width: Math.round(stageWidth * dpr),
       height: Math.round(innerHeight * dpr),
     });
   gl.disable(gl.BLEND);
   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-  gl.viewport(0, 0, 7, edges.length);
+  const ringOverview = state.mix < 0.001 && state.focus < 0;
+  const activeEdges = ringOverview ? internalEdgeCount : edges.length;
+  gl.viewport(0, 0, 7, activeEdges);
   uniforms(prepass, now / 1000);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -300,7 +310,7 @@ function draw(now: number) {
   gl.blendFunc(gl.SRC_ALPHA, state.light ? gl.ONE_MINUS_SRC_ALPHA : gl.ONE);
   uniforms(edgeProgram, now / 1000);
   gl.bindVertexArray(ev);
-  const segments = state.run >= 0 ? 32 : state.zoom > 3 ? 24 : 64;
+  const segments = state.run >= 0 ? 32 : state.zoom > 3 ? 24 : 48;
   gl.uniform1f(locationFor(edgeProgram, "segments"), segments);
   for (const [width, opacity] of state.focus >= 0
     ? [
@@ -314,12 +324,12 @@ function draw(now: number) {
       gl.TRIANGLE_STRIP,
       0,
       (segments + 1) * 2,
-      edges.length,
+      activeEdges,
     );
   }
   uniforms(nodeProgram, now / 1000);
   gl.bindVertexArray(nv);
-  gl.drawArrays(gl.POINTS, 0, nodes.length);
+  gl.drawArrays(gl.POINTS, 0, ringOverview ? internalNodeCount : nodes.length);
   if (state.run >= 0) {
     uniforms(runner, now / 1000);
     gl.drawArrays(gl.POINTS, 0, 1);

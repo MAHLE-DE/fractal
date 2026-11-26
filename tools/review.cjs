@@ -52,6 +52,8 @@ let activeBrowser;
   await page.evaluate(() => window.cascade.skipOpening());
   await page.waitForTimeout(1000);
   await page.screenshot({ path: `${dir}/01-overview.png` });
+  await page.screenshot({ path: `${dir}/21-overview-public.png` });
+  assert(await page.locator("#focus-inset").isHidden());
   await page.locator("#search").fill("pleat");
   await page.waitForTimeout(140);
   assert((await page.locator(".result").count()) > 0);
@@ -70,6 +72,24 @@ let activeBrowser;
   await page.waitForTimeout(1200);
   assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-347");
   await page.screenshot({ path: `${dir}/04-focus-DSGN-347.png` });
+  assert(await page.locator("#focus-inset").isVisible());
+  assert((await page.locator("#edge-labels button").count()) > 0);
+  await page.screenshot({ path: `${dir}/17-focus-inset.png` });
+  await page.locator("#edge-labels button").first().hover();
+  await page.waitForTimeout(150);
+  assert(
+    await page
+      .locator("#edge-labels button")
+      .first()
+      .evaluate((b) => b.classList.contains("hovered")),
+  );
+  await page.screenshot({ path: `${dir}/18-edge-labels.png` });
+  await page.mouse.move(300, 130);
+  const frame = await page.evaluate(() => ({
+    scene: document.querySelector("#scene").getBoundingClientRect().right,
+    panel: document.querySelector("#panel").getBoundingClientRect().left,
+  }));
+  assert(frame.scene < frame.panel, "Scene must stop before the side panel");
   await page
     .locator("#panel details")
     .first()
@@ -79,17 +99,39 @@ let activeBrowser;
   await page.waitForTimeout(170);
   assert((await page.evaluate(() => window.cascade.state.hover)) >= 0);
   await page.screenshot({ path: `${dir}/06-hover-fiber.png` });
+  await page.screenshot({ path: `${dir}/19-hover-neighbor.png` });
+  assert((await page.evaluate(() => window.cascade.state.hover)) >= 0);
   await page.locator('.relation[data-target="DSGN-348"]').first().click();
   await page.waitForTimeout(550);
   assert((await page.evaluate(() => window.cascade.state.run)) >= 0);
+  await page.evaluate(() => window.cascade.pauseAnimations(true));
   await page.screenshot({ path: `${dir}/07-fiber-run-mid.png` });
+  await page.screenshot({ path: `${dir}/22-panel-no-overlap.png` });
+  await page.evaluate(() => window.cascade.pauseAnimations(false));
   await page.waitForTimeout(850);
   assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-348");
   await page.screenshot({ path: `${dir}/08-fiber-run-arrive.png` });
   await page.locator("#transition").selectOption("roll");
   await page.evaluate(() => window.cascade.focus("MATL-686"));
   await page.waitForTimeout(400);
+  await page.evaluate(() => window.cascade.pauseAnimations(true));
+  assert.equal(
+    await page.evaluate(() => {
+      const c = window.cascade;
+      return c.nodes[c.state.transitionTarget].id;
+    }),
+    "MATL-686",
+  );
+  assert(
+    await page.evaluate(
+      () =>
+        window.cascade.state.focusBlend > 0 &&
+        window.cascade.state.focusBlend < 1,
+    ),
+  );
   await page.screenshot({ path: `${dir}/09-ring-roll-mid.png` });
+  await page.screenshot({ path: `${dir}/20-ring-roll-focus-mid.png` });
+  await page.evaluate(() => window.cascade.pauseAnimations(false));
   await page.waitForTimeout(800);
   await page.evaluate(() => {
     window.cascade.state.zoom = 1;
@@ -147,6 +189,7 @@ let activeBrowser;
   await page.locator("#public").selectOption("ring");
   await page.evaluate(() => window.cascade.overview());
   await page.waitForTimeout(1200);
+  assert.equal(await page.evaluate(() => window.cascade.state.mix), 0, "Overview must finish switching to Ring; never freeze between public modes");
   async function measure(name, action) {
     await page.evaluate(() => (window.cascade.samples.length = 0));
     await action();

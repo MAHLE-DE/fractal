@@ -1,5 +1,9 @@
 # Standards Cascade
 
+T20 interrompida a pedido do usuário: ajustes de foco estão em WIP.
+O build foi verificado; a validação visual e de desempenho final da T20
+não foi concluída. Veja a nota no fim de `docs/REVISAO_VISUAL.md`.
+
 Explore o que cada norma exige e quem depende dela. Interface em inglês,
 somente leitura, com as 595 normas vigentes do snapshot do Link-Normas.
 
@@ -14,7 +18,10 @@ render target float (`EXT_color_buffer_float`), disponível na GPU medida.
   norma pública. Os resultados aparecem enquanto digita. ↑/↓ navegam, clique
   ou Enter selecionam, Esc fecha, `/` leva à pesquisa.
 - Ao focar, o anel aproxima até o trecho inferior mostrar cerca de 30 células
-  com rótulos radiais. Verde indica Requires; rosa indica Required by.
+  com rótulos radiais. Dourado-claro indica Requires; ciano indica Required by.
+  Um mini-mapa de 220 px mantém o anel inteiro e as ligações do foco visíveis.
+  Destinos fora da tela aparecem na faixa de borda, com cor da categoria;
+  passar o mouse destaca a fibra, o destino e o respectivo rótulo.
 - **Fiber run** percorre uma citação real com pulso e rastro: abre brevemente
   o enquadramento para enxergar o percurso e retorna ao foco na chegada.
   **Ring roll** mantém o zoom e gira pelo menor caminho. Sem citação direta,
@@ -71,7 +78,7 @@ em tempo de execução nem modifica documentos ou cadastros.
 com bundling beta 0,85 e caminho pelo ancestral comum. GPU calcula controles,
 curvas, tangentes, brilho e pulsos; células/fibras acompanham todos os quadros.
 Rótulos são rasterizados em cache e atualizam continuamente durante transições;
-no estado estável, acompanham a oscilação lenta a 15 Hz. A tesselação usa 64
+no estado estável, acompanham a oscilação lenta a 15 Hz. A tesselação usa 48
 segmentos no conjunto, 32 na corrida e 24 no foco ampliado.
 
 A distribuição .NET 10/WinForms/WebView2, ZIP com SHA-256 e iniciador é a etapa 3.

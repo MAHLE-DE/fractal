@@ -100,3 +100,30 @@ Zero erros de console/WebGL e zero pedidos externos na execução final.
   fibra. Afinidades estão marcadas como “not a citation”.
 - Esta inspeção documenta o resultado observado; não substitui a aprovação
   estética do usuário. Nada foi publicado no remoto nesta etapa.
+
+## T20 — WIP interrompido por instrução do usuário
+
+A T20 foi interrompida antes da validação final. O relatório e as métricas
+acima descrevem a T19. As capturas 17–22 são registros parciais da T20,
+não uma aprovação visual final. O build do WIP foi verificado.
+
+Implementado: mini-mapa de foco de 220 px; destinos fora da tela agrupados
+na borda; saídas dourado-claro e entradas ciano; legenda junto ao foco;
+hover com fibra mais grossa/pulso, halo e código em negrito no destino;
+destino marcado desde o início do Ring roll; públicas ocultas no Overview
+Ring; afastamento dos rótulos TEST/W; área de desenho reservada ao painel.
+O mini-mapa usa cache de curvas e atualiza a 15 Hz; a cena principal segue RAF.
+
+Pendente: concluir a revisão de todas as cenas e a medição final ≥ 55 FPS.
+Rodadas anteriores ficaram abaixo do limiar no ocioso, mesmo com foco e
+transições próximos de 60 FPS. Foi identificada e corrigida a interrupção
+da troca Mixed→Ring ao abrir Overview, mas essa correção final ainda não
+teve o roteiro completo reexecutado. O teste passou a exigir estado Ring
+assentado antes de medir. A tentativa de resolução reduzida foi retirada;
+o canvas mantém a resolução normal.
+
+A faixa de destinos é densa para normas muito conectadas; os rótulos são
+localizadores agrupados, sem linhas de chamada até cada ponto de saída.
+As capturas intermediárias pausam a timeline apenas para fotografar o meio
+da transição. Capturas/vídeo/métricas anteriores da T19 foram preservados,
+em vez de substituídos por uma rodada parcial ou reprovada da T20.
