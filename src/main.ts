@@ -65,6 +65,7 @@ function breadcrumb() {
 function renderPanel(id: string) {
   if (panelId === id && panel.childNodes.length) {
     panel.classList.add("visible");
+    document.body.classList.add("panel-open");
     return;
   }
   if (panelId) {
@@ -78,6 +79,7 @@ function renderPanel(id: string) {
     panel.append(cached);
     panelCache.delete(id);
     panel.classList.add("visible");
+    document.body.classList.add("panel-open");
     panel.scrollTop = 0;
     return;
   }
@@ -162,6 +164,7 @@ function renderPanel(id: string) {
     };
   });
   panel.classList.add("visible");
+    document.body.classList.add("panel-open");
   panel.scrollTop = 0;
   const open = $<HTMLButtonElement>("#open-pdf");
   if (open)
@@ -234,7 +237,7 @@ function focus(id: string) {
     state,
     "rotation,zoom,anchor,runProgress,flash,panelSpace,focusBlend",
   );
-  gsap.to(state, { panelSpace: 400, duration: 0.45, ease: "power2.inOut" });
+  gsap.to(state, { panelSpace: 372, duration: 0.45, ease: "power2.inOut" });
   state.transitionTarget = ni;
   state.focusBlend = 0;
   const duration = transition === "fiber" && edge >= 0 ? 1.2 : 0.9;
@@ -294,6 +297,7 @@ function overview() {
   current = "";
   pending = "";
   panel.classList.remove("visible");
+  document.body.classList.remove("panel-open");
   $("#focus-label").innerHTML = "";
   $("#overview-note").style.opacity = "1";
 }
@@ -541,10 +545,10 @@ function codeLabel(id: string, category: string) {
   if (!codeLabels.has(key)) {
     const label = document.createElement("canvas"),
       c = label.getContext("2d")!;
-    c.font = `${bold ? "bold " : ""}11px Mono`;
+    c.font = `${bold ? "700 " : "600 "}11px 'Segoe UI', sans-serif`;
     label.width = Math.ceil(c.measureText(id).width) + 4;
     label.height = 20;
-    c.font = `${bold ? "bold " : ""}11px Mono`;
+    c.font = `${bold ? "700 " : "600 "}11px 'Segoe UI', sans-serif`;
     c.fillStyle = labelColor(category);
     c.fillText(id, 2, 14);
     codeLabels.set(key, label);
@@ -626,7 +630,7 @@ function drawFocusContext(t: number, stageWidth: number) {
     .filter(({ e }) => e.source === id || e.target === id);
   mini.clearRect(0, 0, 220, 240);
   mini.fillStyle = state.light ? "#213954" : "#bdcde0";
-  mini.font = "10px Mono";
+  mini.font = "600 10px 'Segoe UI', sans-serif";
   mini.textAlign = "left";
   mini.fillText("FOCUS CONNECTIONS", 14, 22);
   mini.strokeStyle = state.light ? "#8c9cad" : "#334a65";
@@ -704,7 +708,7 @@ function drawFocusContext(t: number, stageWidth: number) {
   mini.fill();
   mini.stroke();
   mini.fillStyle = state.light ? "#213954" : "#e7f0fc";
-  mini.font = "bold 11px Mono";
+  mini.font = "700 11px 'Segoe UI', sans-serif";
   mini.textAlign = "center";
   mini.fillText(nodes[marker].id, 110, 226);
   const unique = [...new Map(offscreen.map((x) => [x.id, x])).values()];
@@ -799,7 +803,7 @@ setOverlay((t) => {
       for (const p of placed) if (Math.hypot(x - p.x, y - p.y) < 75) y += 34;
       if (state.focus >= 0 && y > innerHeight - 145) continue;
       placed.push({ x, y });
-      ctx.font = "600 15px Display";
+      ctx.font = "600 13px 'Segoe UI', sans-serif";
       ctx.textAlign = "center";
       ctx.fillStyle = labelColor(cat);
       ctx.fillText(`${cat} ${leaves.length}`, x, y);
@@ -820,7 +824,7 @@ setOverlay((t) => {
       ctx.translate(p.x, p.y);
       ctx.rotate(-p.angle);
       ctx.textAlign = "right";
-      ctx.font = "11px Mono";
+      ctx.font = "600 11px 'Segoe UI', sans-serif";
       ctx.fillStyle = labelColor(n.category);
       ctx.shadowColor = state.light ? "#ffffff" : "#0b1220";
       ctx.shadowBlur = 0;
@@ -854,7 +858,7 @@ setOverlay((t) => {
       ctx.translate(p.x, p.y);
       const flip = Math.cos(p.angle) < 0;
       ctx.rotate(-p.angle + (flip ? Math.PI : 0));
-      ctx.font = "10px Mono";
+      ctx.font = "600 10px 'Segoe UI', sans-serif";
       ctx.textAlign = flip ? "right" : "left";
       ctx.fillStyle = labelColor("PUB");
       ctx.fillText(n.id, flip ? -12 : 12, 0);

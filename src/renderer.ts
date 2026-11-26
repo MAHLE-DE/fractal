@@ -51,23 +51,23 @@ vec2 project(vec2 p){p*=.70*zoom;p.y+=.70*(zoom*anchor-1.);p.x*=resolution.y/res
 const edgeProgram = program(
   `#version 300 es
 precision highp float;${common}
-uniform sampler2D dynamicControls;uniform float width,segments;out vec3 tint;out float progress,alpha,lateral,strokeWidth;flat out float edgeID;flat out float selected;layout(location=0)in vec4 edgeInfo;layout(location=1)in vec3 color;
-vec2 cp(int j){return texelFetch(dynamicControls,ivec2(clamp(j,0,int(edgeInfo.z)-1),gl_InstanceID),0).xy;}
+uniform sampler2D dynamicControls,edgeData,edgeColors;uniform float width,segments,passMode;out vec3 tint;out float progress,alpha,lateral,strokeWidth;flat out float edgeID;flat out float selected;layout(location=2)in float edgeIndex;vec4 edgeInfo;vec3 color;int eid;
+vec2 cp(int j){return texelFetch(dynamicControls,ivec2(clamp(j,0,int(edgeInfo.z)-1),eid),0).xy;}
 vec2 curve(float t,out vec2 tangent){float u=clamp(t,0.,.999999)*float(int(edgeInfo.z)+1);int k=int(floor(u))-2;float f=fract(u),f2=f*f,f3=f2*f;vec2 a=cp(k),b=cp(k+1),c=cp(k+2),d=cp(k+3);tangent=a*(-.5*(1.-f)*(1.-f))+b*(1.5*f2-2.*f)+c*(-1.5*f2+f+.5)+d*(.5*f2);return (a*pow(1.-f,3.)+b*(3.*f3-6.*f2+4.)+c*(-3.*f3+3.*f2+3.*f+1.)+d*f3)/6.;}
-void main(){if((width>2.&&focus>=0.&&edgeInfo.x!=focus&&edgeInfo.y!=focus&&float(gl_InstanceID)!=hover&&float(gl_InstanceID)!=run)||(edgeInfo.w>.5&&publicMix<.001&&edgeInfo.x!=focus&&edgeInfo.y!=focus)){gl_Position=vec4(2,2,0,1);alpha=0.;tint=vec3(0);progress=0.;edgeID=-1.;selected=0.;return;}float t=float(gl_VertexID/2)/segments;vec2 tangent;vec2 p=project(curve(t,tangent));float len=length(tangent);vec2 normal=len>0.000001?vec2(-tangent.y,tangent.x)/len:vec2(0.,1.);
-float outgoing=float(edgeInfo.x==focus),incoming=float(edgeInfo.y==focus);selected=max(outgoing,incoming);float h=float(float(gl_InstanceID)==hover);float running=float(float(gl_InstanceID)==run);
-alpha=focus<0.?1.:mix(.22,1.,selected);if(categoryFilter>=0.&&category(edgeInfo.x)!=categoryFilter&&category(edgeInfo.y)!=categoryFilter)alpha*=.03;if(edgeInfo.w>0.5)alpha*=focus<0.?publicMix:selected;if(edgeInfo.w>.5&&publicMix<.001&&texelFetch(nodeData,ivec2(int(edgeInfo.y),1),0).w<.5)alpha=0.;alpha*=smoothstep(.1,.75,opening);tint=mix(color,vec3(1.,.89,.64),outgoing);tint=mix(tint,vec3(.50,.91,1.),incoming);tint*=mix(1.,.58,light);if(hover>=0.&&selected>.5)alpha*=mix(.16,1.,h);alpha=max(alpha,h);strokeWidth=(width+selected*.35)*mix(1.,3.,h);lateral=float(gl_VertexID%2)*2.-1.;p+=normal*lateral*(strokeWidth+2.)/resolution;gl_Position=vec4(p,0,1);progress=t;edgeID=float(gl_InstanceID);selected=max(h,running);}`,
+void main(){eid=int(edgeIndex);edgeInfo=texelFetch(edgeData,ivec2(0,eid),0);color=texelFetch(edgeColors,ivec2(0,eid),0).rgb;bool isFocusEdge=edgeInfo.x==focus||edgeInfo.y==focus||float(eid)==hover||float(eid)==run;if((passMode>.5&&passMode<1.5&&focus>=0.&&!isFocusEdge)||(passMode>1.5&&isFocusEdge)||(edgeInfo.w>.5&&publicMix<.001&&edgeInfo.x!=focus&&edgeInfo.y!=focus)){gl_Position=vec4(2,2,0,1);alpha=0.;tint=vec3(0);progress=0.;edgeID=-1.;selected=0.;return;}float t=float(gl_VertexID/2)/segments;vec2 tangent;vec2 p=project(curve(t,tangent));float len=length(tangent);vec2 normal=len>0.000001?vec2(-tangent.y,tangent.x)/len:vec2(0.,1.);
+float outgoing=float(edgeInfo.x==focus),incoming=float(edgeInfo.y==focus);selected=max(outgoing,incoming);float h=float(float(eid)==hover);float running=float(float(eid)==run);
+alpha=focus<0.?1.:mix(.07,1.,selected);if(categoryFilter>=0.&&category(edgeInfo.x)!=categoryFilter&&category(edgeInfo.y)!=categoryFilter)alpha*=.03;if(edgeInfo.w>0.5)alpha*=focus<0.?publicMix:selected;if(edgeInfo.w>.5&&publicMix<.001&&texelFetch(nodeData,ivec2(int(edgeInfo.y),1),0).w<.5)alpha=0.;alpha*=smoothstep(.1,.75,opening);tint=mix(color,vec3(1.,.89,.64),outgoing);tint=mix(tint,vec3(.50,.91,1.),incoming);tint*=mix(1.,.58,light);if(hover>=0.&&selected>.5)alpha*=mix(.16,1.,h);alpha=max(alpha,h);strokeWidth=(width+selected*.3)*mix(1.,2.6,h)*clamp(1.+(zoom-1.)*.03,1.,1.5);lateral=float(gl_VertexID%2)*2.-1.;p+=normal*lateral*(strokeWidth+2.)/resolution;gl_Position=vec4(p,0,1);progress=t;edgeID=float(eid);selected=max(h,running);}`,
   `#version 300 es
 precision highp float;in vec3 tint;in float progress,alpha,lateral,strokeWidth;flat in float edgeID;flat in float selected;uniform float time,opacity,hover,run,runProgress,runDirection,opening;out vec4 outputColor;
-void main(){float reveal=opening>=1.?1.:1.-smoothstep(max(0.,opening-.1)*.60,max(0.,opening-.1)*.60+.04,abs(progress-.5));float coverage=reveal*(1.-smoothstep(strokeWidth*.5-.5,strokeWidth*.5+.5,abs(lateral)*(strokeWidth+2.)*.5));if(alpha<.3){outputColor=vec4(tint,opacity*alpha*coverage);return;}float breath=.90+.10*sin(time*.6+edgeID*.31);float pulse=fract(edgeID*.371)>.95?exp(-pow((progress-fract(time*.10+edgeID*.0618))*65.,2.)):0.;if(edgeID==hover)pulse+=exp(-pow((progress-fract(time*.65))*25.,2.))*5.;float d=(progress-runProgress)*runDirection;float travel=edgeID==run?exp(-pow(d*30.,2.))*7.+step(-.15,d)*step(d,0.)*exp(d*25.)*2.:0.;outputColor=vec4(tint*(breath+pulse*2.+travel+selected*.7),opacity*alpha*coverage);}`,
+void main(){float reveal=opening>=1.?1.:1.-smoothstep(max(0.,opening-.1)*.60,max(0.,opening-.1)*.60+.04,abs(progress-.5));float coverage=reveal*(1.-smoothstep(strokeWidth*.5-.5,strokeWidth*.5+.5,abs(lateral)*(strokeWidth+2.)*.5));if(alpha<.3){outputColor=vec4(tint,opacity*alpha*coverage);return;}float breath=.90+.10*sin(time*.6+edgeID*.31);float pulse=fract(edgeID*.371)>.95?exp(-pow((progress-fract(time*.10+edgeID*.0618))*65.,2.)):0.;if(edgeID==hover)pulse+=exp(-pow((progress-fract(time*.65))*25.,2.))*5.;float d=(progress-runProgress)*runDirection;float travel=edgeID==run?exp(-pow(d*30.,2.))*7.+step(-.15,d)*step(d,0.)*exp(d*25.)*2.:0.;vec3 base=tint*breath;base=mix(base,vec3(1.),selected*.12);base=mix(base,vec3(1.,.97,.9),clamp(pulse*.55+travel*.4,0.,.85));outputColor=vec4(base,clamp(opacity*alpha*coverage*(1.+travel*.6),0.,1.));}`,
 );
 const nodeProgram = program(
   `#version 300 es
 precision highp float;${common}
-uniform sampler2D edgeData;layout(location=0)in vec3 color;out vec3 tint;out float alpha;flat out float focused;
-void main(){float id=float(gl_VertexID);vec4 n=nd(id);gl_Position=vec4(project(node(id)),0,1);float radius=1.3+sqrt(n.w)*.7;float scale=mix(1.,4.5,clamp((zoom-1.)/15.,0.,1.));radius=zoom>3.?clamp(radius*scale,8.,14.):radius;focused=max(float(id==focus)*(1.-focusBlend),float(id==transitionTarget)*(.65+.35*focusBlend));if(hover>=0.){vec4 h=texelFetch(edgeData,ivec2(0,int(hover)),0);float other=h.x==focus?h.y:h.x;focused=max(focused,float(id==other));}gl_PointSize=2.*(radius+focused*(6.+3.*sin(time*3.)))*min(resolution.y/1000.,1.5);tint=color*mix(1.,.58,light);alpha=smoothstep(float(gl_VertexID)/${nodes.length}.+0.0,float(gl_VertexID)/${nodes.length}.+.1,opening*1.3);if(categoryFilter>=0.&&category(id)!=categoryFilter)alpha*=.07;if(n.z>1.1)alpha*=mix(texelFetch(nodeData,ivec2(gl_VertexID,1),0).w*float(focus>=0.)*.6,1.,publicMix);}`,
+uniform sampler2D edgeData;layout(location=0)in vec3 color;out vec3 tint;out float alpha,ratio,pix;flat out float focused;
+void main(){float id=float(gl_VertexID);vec4 n=nd(id);gl_Position=vec4(project(node(id)),0,1);float radius=1.3+sqrt(n.w)*.7;float scale=mix(1.,4.5,clamp((zoom-1.)/15.,0.,1.));radius=zoom>3.?clamp(radius*scale,9.,16.):radius;focused=max(float(id==focus)*(1.-focusBlend),float(id==transitionTarget)*(.65+.35*focusBlend));if(hover>=0.){vec4 h=texelFetch(edgeData,ivec2(0,int(hover)),0);float other=h.x==focus?h.y:h.x;focused=max(focused,float(id==other));}float pxScale=min(resolution.y/1000.,1.5);float halo=focused*(7.+2.*sin(time*2.4));float total=radius+halo+1.5;gl_PointSize=2.*total*pxScale;ratio=radius/total;pix=gl_PointSize;tint=color*mix(1.,.72,light);alpha=smoothstep(float(gl_VertexID)/${nodes.length}.+0.0,float(gl_VertexID)/${nodes.length}.+.1,opening*1.3);if(categoryFilter>=0.&&category(id)!=categoryFilter)alpha*=.07;if(n.z>1.1)alpha*=mix(texelFetch(nodeData,ivec2(gl_VertexID,1),0).w*float(focus>=0.)*.6,1.,publicMix);}`,
   `#version 300 es
-precision highp float;in vec3 tint;in float alpha;flat in float focused;out vec4 outputColor;void main(){float d=length(gl_PointCoord-.5)*2.;float a=1.-smoothstep(.55,1.,d);if(focused>0.)a=max(a,focused*exp(-pow((d-.82)*22.,2.)));outputColor=vec4(tint*(1.+focused*.6),a*alpha);}`,
+precision highp float;uniform float light;in vec3 tint;in float alpha,ratio,pix;flat in float focused;out vec4 outputColor;void main(){float d=length(gl_PointCoord-.5)*2.;float px=2./max(pix,1.);float body=1.-smoothstep(ratio-px,ratio,d);vec3 rimColor=mix(tint,vec3(1.),focused*.85);vec3 fill=mix(vec3(.071,.137,.22),vec3(.93,.95,.97),light);vec3 col=rimColor;if(pix*ratio>7.){float rim=max(px*1.7,ratio*.17);float inner=1.-smoothstep(ratio-rim-px,ratio-rim,d);col=mix(rimColor,fill,inner);}float haloD=ratio+(1.-ratio)*.45;float halo=focused*.55*exp(-pow((d-haloD)/(px*2.2),2.));vec3 outCol=mix(col,vec3(1.),halo*(1.-body));outputColor=vec4(outCol,max(body,halo)*alpha);}`,
 );
 function texture(unit: number, w: number, h: number, values: number[]) {
   gl.activeTexture(gl.TEXTURE0 + unit);
@@ -117,6 +117,12 @@ texture(
     e.controls.length,
     e.public ? 1 : 0,
   ]),
+);
+texture(
+  4,
+  1,
+  edges.length,
+  edges.flatMap((e) => [...rgb(palette[nodes[byId.get(e.source)!].category]), 1]),
 );
 if (!gl.getExtension("EXT_color_buffer_float"))
   throw Error("Floating-point render targets unavailable");
@@ -174,23 +180,31 @@ function rgb(c: string) {
 }
 const ev = gl.createVertexArray();
 gl.bindVertexArray(ev);
-attr(
-  0,
-  4,
-  edges.flatMap((e) => [
-    byId.get(e.source)!,
-    byId.get(e.target)!,
-    e.controls.length,
-    e.public ? 1 : 0,
-  ]),
-  1,
-);
-attr(
-  1,
-  3,
-  edges.flatMap((e) => rgb(palette[nodes[byId.get(e.source)!].category])),
-  1,
-);
+attr(2, 1, edges.map((_, i) => i), 1);
+// Subconjunto: so as fibras da norma em foco (mais a do hover e a da corrida), desenhadas em alta resolucao.
+const focusVao = gl.createVertexArray();
+gl.bindVertexArray(focusVao);
+const focusBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, focusBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(edges.length), gl.DYNAMIC_DRAW);
+gl.enableVertexAttribArray(2);
+gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 0, 0);
+gl.vertexAttribDivisor(2, 1);
+let focusKey = "";
+let focusCount = 0;
+function updateFocusSubset() {
+  const key = `${state.focus}|${state.hover}|${state.run}`;
+  if (key === focusKey) return;
+  focusKey = key;
+  const focusId = nodes[state.focus]?.id;
+  const list: number[] = [];
+  edges.forEach((e, i) => {
+    if (e.source === focusId || e.target === focusId || i === state.hover || i === state.run) list.push(i);
+  });
+  focusCount = list.length;
+  gl.bindBuffer(gl.ARRAY_BUFFER, focusBuffer);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(list));
+}
 const nv = gl.createVertexArray();
 gl.bindVertexArray(nv);
 attr(
@@ -244,6 +258,7 @@ function uniforms(p: WebGLProgram, t: number) {
     gl.uniform1i(locationFor(p, "controls"), 1);
     gl.uniform1i(locationFor(p, "dynamicControls"), 2);
     gl.uniform1i(locationFor(p, "edgeData"), 3);
+    gl.uniform1i(locationFor(p, "edgeColors"), 4);
     previous.set("__samplers", 1);
   }
 }
@@ -307,24 +322,34 @@ function draw(now: number) {
   );
   gl.clear(gl.COLOR_BUFFER_BIT);
   gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, state.light ? gl.ONE_MINUS_SRC_ALPHA : gl.ONE);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   uniforms(edgeProgram, now / 1000);
   gl.bindVertexArray(ev);
-  const segments = state.run >= 0 ? 32 : state.zoom > 3 ? 24 : 48;
-  gl.uniform1f(locationFor(edgeProgram, "segments"), segments);
-  for (const [width, opacity] of state.focus >= 0
-    ? [
-        [3, 0.018],
-        [1.2, 0.27],
-      ]
-    : [[1.2, 0.27]]) {
+  // Passes: [modo, espessura, opacidade, segmentos]. Modo 0 = todas; 1 = so as da norma em foco; 2 = todas menos as do foco.
+  // So as fibras em foco usam alta resolucao (curvas lisas no zoom); o fundo usa menos segmentos para manter 60 FPS.
+  const fine = state.zoom > 3 ? 128 : 64;
+  const passes: [number, number, number, number][] =
+    state.focus >= 0
+      ? [
+          [2, 1.3, 0.9, state.zoom > 3 ? 40 : 48],
+          [1, 3.0, 0.05, fine],
+          [1, 1.3, 0.9, fine],
+        ]
+      : [[0, 1.3, 0.34, 64]];
+  if (state.focus >= 0) updateFocusSubset();
+  for (const [mode, width, opacity, segments] of passes) {
+    const subset = mode === 1;
+    if (subset && !focusCount) continue;
+    gl.bindVertexArray(subset ? focusVao : ev);
+    gl.uniform1f(locationFor(edgeProgram, "passMode"), mode);
+    gl.uniform1f(locationFor(edgeProgram, "segments"), segments);
     gl.uniform1f(locationFor(edgeProgram, "width"), width);
     gl.uniform1f(locationFor(edgeProgram, "opacity"), opacity);
     gl.drawArraysInstanced(
       gl.TRIANGLE_STRIP,
       0,
       (segments + 1) * 2,
-      activeEdges,
+      subset ? focusCount : activeEdges,
     );
   }
   uniforms(nodeProgram, now / 1000);
