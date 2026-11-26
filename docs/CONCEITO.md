@@ -94,7 +94,7 @@ App somente leitura para explorar a cascata de citações entre as normas vigent
 - Ampulheta e rio em níveis como vistas auxiliares, a avaliar depois.
 
 ## 8. Repositório e etapas
-- Repositório novo **`MAHLE-DE/standards-cascade`** (privado), com cópia local em `<pasta-local>/standards-cascade`.
+- Repositório próprio no GitHub, com cópia local em `<pasta-local>/standards-cascade`.
 - **Etapa 1:** prova de desempenho, com o anel completo e as 3.000 fibras em WebGL no navegador.
 - **Etapa 2:** a prévia HTML com abertura, pesquisa, foco, caixa lateral, corrida e os dois modos de públicas. **Você avalia aqui.**
 - **Etapa 3:** host WebView2, ZIP e iniciador. Teste no PC antigo.
