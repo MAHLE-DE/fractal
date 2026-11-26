@@ -6,6 +6,14 @@ root=Path(__file__).resolve().parents[1]; source=a.source
 def read(p): return json.loads((source/p).read_text(encoding='utf-8'))
 cad=read('02_BANCO_ATUAL/cadastro_canonico_v3_SEM_URL_SHAREPOINT.json'); records={r['document_no']:r for r in cad['records']}
 result=read('10_EXTRATOR/saida/resultado_05_DOCUMENTS.json')
+# Normas finais validas sem codigo no formato novo (decisao F9 do usuario, mapa versionado do link_normas).
+# Elas nao estao no Valid-Documents, mas sao citadas como norma vigente; entram no anel como no proprio.
+# Titulo: como as normas citantes o descrevem (o mapa nao traz titulo).
+FINAL_LEGACY={'W-B-0718':'Identification, specification and marking of special characteristics'}
+versioned=read('02_BANCO_ATUAL/mapa_normas_v1.json')['codigos']
+for d,title in FINAL_LEGACY.items():
+ if versioned.get(d,{}).get('status')!='LEGADO_SEM_SUCESSOR': print('aviso: mapa sem a decisao F9 de',d,'(usa a decisao registrada aqui)')
+ records[d]=dict(document_no=d,title=versioned.get(d,{}).get('titulo') or title,previous_document_no='',language='',local_file_name='',finalLegacy=True)
 mp='02_BANCO_ATUAL/mapa_base/mapa_normas_v1.json'
 if not (source/mp).exists(): mp='02_BANCO_ATUAL/mapa_normas_v1.json'
 mapping=read(mp)['codigos']
@@ -13,7 +21,7 @@ def group(d):
  m=re.match(r'[SGW]-([A-Z])-([A-Z]{2})-(\d{2})',records[d].get('previous_document_no') or '')
  return m.groups() if m else ('-','-','--')
 ids=sorted(records,key=lambda d:(d.split('-')[0],group(d),d)); positions={d:i for i,d in enumerate(ids)}
-nodes=[dict(id=d,category=d.split('-')[0],group=group(d)[0],type=group(d)[1],title=records[d]['title'],previous=records[d].get('previous_document_no') or '',language=records[d]['language'],file=records[d].get('local_file_name') or '',aliases=sorted(k for k,v in mapping.items() if v.get('atual')==d and v.get('status') in ('VIGENTE','RESOLVIDO')),angle=2*math.pi*i/len(ids)) for i,d in enumerate(ids)]
+nodes=[dict(id=d,category=d.split('-')[0],group=group(d)[0],type=group(d)[1],title=records[d]['title'],previous=records[d].get('previous_document_no') or '',language=records[d]['language'],finalLegacy=bool(records[d].get('finalLegacy')),file=records[d].get('local_file_name') or '',aliases=sorted(k for k,v in mapping.items() if v.get('atual')==d and v.get('status') in ('VIGENTE','RESOLVIDO')),angle=2*math.pi*i/len(ids)) for i,d in enumerate(ids)]
 hierarchy=[]
 for cat in sorted({n['category'] for n in nodes}):
  groups=[]
@@ -65,6 +73,6 @@ for layer in ('ancestral','familia','grupo','categoria'):
 dates=re.search(r'Valid-Documents-(\d{4}-\d{2}-\d{2})',str(cad.get('sources',{}).get('valid_documents','')))
 commit=subprocess.check_output(['git','rev-parse','origin/main'],cwd=source,text=True).strip()
 assert not subprocess.check_output(['git','diff','origin/main','--','10_EXTRATOR/saida/resultado_05_DOCUMENTS.json'],cwd=source)
-data=dict(meta=dict(validDocuments=dates[1] if dates else None,sourceCommit=commit,generatedAt=D.datetime.now(D.timezone.utc).isoformat(),nodes=len(nodes),edges=len(edges),public=len(public),map=mp),nodes=nodes,edges=edges,public=public,affinities=affinities,hierarchy=hierarchy)
+data=dict(meta=dict(validDocuments=dates[1] if dates else None,sourceCommit=commit,generatedAt=D.datetime.now(D.timezone.utc).isoformat(),nodes=len(nodes),vigentes=sum(not n['finalLegacy'] for n in nodes),finalLegacy=sorted(FINAL_LEGACY),byCategory=dict(sorted(C.Counter(n['category'] for n in nodes).items())),edges=len(edges),public=len(public),map=mp),nodes=nodes,edges=edges,public=public,affinities=affinities,hierarchy=hierarchy)
 (root/'data/cascade-data.json').write_text(json.dumps(data,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
 print(data['meta'])

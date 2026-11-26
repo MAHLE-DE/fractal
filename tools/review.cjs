@@ -69,8 +69,11 @@ let activeBrowser;
   await page.locator("#search").fill("DSGN-347");
   await page.waitForTimeout(100);
   await page.locator("#search").press("Enter");
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(2200);
   assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-347");
+  assert(await page.locator("#results").evaluate((e) => e.hidden));
+  assert(await page.locator("#trail").isVisible());
+  assert(await page.locator("#back").isDisabled(), "Back starts disabled on the first standard");
   await page.screenshot({ path: `${dir}/04-focus-DSGN-347.png` });
   assert(await page.locator("#focus-inset").isVisible());
   await page.screenshot({ path: `${dir}/17-focus-inset.png` });
@@ -99,13 +102,13 @@ let activeBrowser;
   await page.screenshot({ path: `${dir}/07-fiber-run-mid.png` });
   await page.screenshot({ path: `${dir}/22-panel-no-overlap.png` });
   await page.evaluate(() => window.cascade.pauseAnimations(false));
-  await page.waitForTimeout(850);
+  await page.waitForTimeout(2600);
   assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-348");
   await page.screenshot({ path: `${dir}/08-fiber-run-arrive.png` });
-  await page.locator("#transition").selectOption("roll");
   await page.evaluate(() => window.cascade.focus("MATL-686"));
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(500);
   await page.evaluate(() => window.cascade.pauseAnimations(true));
+  assert.equal(await page.evaluate(() => window.cascade.state.run), -1, "Without a direct citation the ring rolls");
   assert.equal(
     await page.evaluate(() => {
       const c = window.cascade;
@@ -123,14 +126,27 @@ let activeBrowser;
   await page.screenshot({ path: `${dir}/09-ring-roll-mid.png` });
   await page.screenshot({ path: `${dir}/20-ring-roll-focus-mid.png` });
   await page.evaluate(() => window.cascade.pauseAnimations(false));
-  await page.waitForTimeout(800);
-  await page.evaluate(() => {
-    window.cascade.state.zoom = 1;
-  });
+  await page.waitForTimeout(2600);
+  assert.equal(await page.evaluate(() => window.cascade.current), "MATL-686");
+  // Voltar percorre a cascata ate a primeira norma clicada.
+  assert.equal(await page.locator("#breadcrumbs button").count(), 3);
+  await page.locator("#back").click();
+  await page.waitForTimeout(2800);
+  assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-348");
+  await page.keyboard.press("Backspace");
+  await page.waitForTimeout(2800);
+  assert.equal(await page.evaluate(() => window.cascade.current), "DSGN-347");
+  assert(await page.locator("#back").isDisabled());
+  await page.screenshot({ path: `${dir}/23-back-to-first.png` });
+  // Norma final sem codigo novo.
+  await page.evaluate(() => window.cascade.focus("W-B-0718"));
+  await page.waitForTimeout(3000);
+  assert.equal(await page.evaluate(() => window.cascade.current), "W-B-0718");
+  assert.equal(await page.locator("#panel .relation").count(), 9);
+  await page.screenshot({ path: `${dir}/24-final-legacy-W-B-0718.png` });
+  await page.evaluate(() => window.cascade.overview());
+  await page.waitForTimeout(1500);
   await page.screenshot({ path: `${dir}/10-public-ring.png` });
-  await page.locator("#public").selectOption("mixed");
-  await page.waitForTimeout(1200);
-  await page.screenshot({ path: `${dir}/11-public-mixed.png` });
   // Outros comportamentos funcionais: vazio, teclado, legado, tema e preferência.
   await page.locator("#search").fill("nothing-should-match-012345");
   await page.waitForTimeout(140);
@@ -151,7 +167,7 @@ let activeBrowser;
   await page.locator("#theme").click();
   const metrics = {};
   await page.evaluate(() => window.cascade.focus("ISO 554"));
-  await page.waitForTimeout(1700);
+  await page.waitForTimeout(2600);
   const expectedPublic = await page.evaluate(
     () =>
       window.cascade.data.public.filter((e) => e.target === "ISO 554").length,
@@ -165,22 +181,24 @@ let activeBrowser;
   );
   await page.screenshot({ path: `${dir}/16-public-details.png` });
   await page.evaluate(() => window.cascade.focus("MATL-686"));
-  await page.waitForTimeout(1200);
-  await page.evaluate(() => {
-    window.__open = window.open;
-    window.open = () => null;
+  await page.waitForTimeout(2600);
+  const opened = await page.evaluate(() => {
+    let target = "";
+    const original = window.open;
+    window.open = (u) => ((target = String(u)), null);
+    document.querySelector("#open-pdf").click();
+    window.open = original;
+    return target;
   });
-  await page.locator("#open-pdf").click();
-  assert((await page.locator("#file-path").inputValue()).startsWith("file:"));
-  await page.locator("#close-dialog").click();
-  await page.evaluate(() => (window.open = window.__open));
+  assert(opened.startsWith("file:"), "Open PDF opens the file directly, with no dialog");
   await page.locator("#search").fill("");
   await page.waitForTimeout(100);
   assert(await page.locator("#results").evaluate((e) => e.hidden));
-  await page.locator("#public").selectOption("ring");
   await page.evaluate(() => window.cascade.overview());
-  await page.waitForTimeout(1200);
-  assert.equal(await page.evaluate(() => window.cascade.state.mix), 0, "Overview must finish switching to Ring; never freeze between public modes");
+  await page.waitForTimeout(1500);
+  assert.equal(await page.evaluate(() => window.cascade.state.mix), 0);
+  for (const removed of ["#transition", "#public", "#live", "#fps", "#file-dialog"])
+    assert.equal(await page.locator(removed).count(), 0, removed + " was removed");
   async function measure(name, action) {
     await page.evaluate(() => (window.cascade.samples.length = 0));
     await action();
@@ -193,20 +211,18 @@ let activeBrowser;
   }
   await measure("idle", () => page.waitForTimeout(4000));
   await page.evaluate(() => window.cascade.focus("DSGN-347"));
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(2600);
   await measure("focus", () => page.waitForTimeout(4000));
-  await page.locator("#transition").selectOption("fiber");
   await measure("fiberRun", async () => {
     for (const id of ["DSGN-348", "DSGN-347", "DSGN-348"]) {
       await page.evaluate((id) => window.cascade.focus(id), id);
-      await page.waitForTimeout(1250);
+      await page.waitForTimeout(2800);
     }
   });
-  await page.locator("#transition").selectOption("roll");
   await measure("ringRoll", async () => {
     for (const id of ["MATL-686", "MEAS-579", "DSGN-347"]) {
       await page.evaluate((id) => window.cascade.focus(id), id);
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2600);
     }
   });
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -230,14 +246,13 @@ let activeBrowser;
   await v.locator("#search").fill("DSGN-347");
   await v.waitForTimeout(140);
   await v.locator("#search").press("Enter");
-  await v.waitForTimeout(1600);
+  await v.waitForTimeout(2600);
   await v.locator('.relation[data-target="DSGN-348"]').first().click();
-  await v.waitForTimeout(1800);
-  await v.locator("#transition").selectOption("roll");
+  await v.waitForTimeout(3200);
   await v.evaluate(() => window.cascade.focus("MATL-686"));
-  await v.waitForTimeout(2200);
-  await v.locator("#public").selectOption("mixed");
-  await v.waitForTimeout(1800);
+  await v.waitForTimeout(3000);
+  await v.locator("#back").click();
+  await v.waitForTimeout(3000);
   const video = v.video();
   await videoContext.close();
   await video.saveAs(`${dir}/15-full-flow.webm`);

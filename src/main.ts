@@ -100,7 +100,7 @@ function renderPanel(id: string) {
   while (panelCache.size > 8)
     panelCache.delete(panelCache.keys().next().value!);
   const n = nodes[byId.get(id)!];
-  panel.innerHTML = `<div class="eyebrow"><small>STANDARD IN FOCUS</small><span class="chip" style="color:${palette[n.category]}">${n.category}</span></div><h2>${esc(id)}</h2><p class="card-title">${esc(n.title)}</p><p class="previous">${esc(n.previous)}${n.language ? " · " + n.language.toUpperCase() : ""}</p>${n.file ? '<button class="open" id="open-pdf">Open PDF ↗</button>' : ""}`;
+  panel.innerHTML = `<div class="eyebrow"><small>STANDARD IN FOCUS</small><span class="chip" style="color:${palette[n.category]}">${n.category}</span></div><h2>${esc(id)}</h2><p class="card-title">${esc(n.title)}</p><p class="previous">${(n as { finalLegacy?: boolean }).finalLegacy ? "Final standard · no new-format code" : esc(n.previous)}${n.language ? " · " + n.language.toUpperCase() : ""}</p>${n.file ? '<button class="open" id="open-pdf">Open PDF ↗</button>' : ""}`;
   const sections = [
     [
       "Requires",
@@ -479,7 +479,6 @@ canvas.onclick = (e) => {
   else overview();
 };
 $("#overview").onclick = overview;
-state.live = true;
 $("#theme").onclick = () => {
   document.body.classList.toggle("light");
   state.light = +document.body.classList.contains("light");
@@ -653,7 +652,7 @@ function drawFocusContext(t: number, stageWidth: number) {
     mini.arc(110, 127, 94.4, 0, Math.PI * 2);
     mini.stroke();
   }
-  for (let i = 0; i < 595; i++) {
+  for (let i = 0; i < nodes.length && nodes[i].category !== "PUB"; i++) {
     const p = worldPoint(i, t);
     mini.fillStyle = palette[nodes[i].category];
     mini.fillRect(110 + p[0] * 80, 127 - p[1] * 80, 1.3, 1.3);
