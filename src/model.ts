@@ -31,6 +31,39 @@ export const topPublic = [...counts]
   .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   .slice(0, 40)
   .map((x) => x[0]);
+// Anel externo: TODAS as normas publicas, agrupadas por familia (ISO, DIN, ASTM...), familias maiores primeiro.
+const firstToken = (id: string) => id.split(/[\s/-]/)[0].replace(/\d+$/, "");
+const familySize = new Map<string, number>();
+for (const id of counts.keys())
+  familySize.set(firstToken(id), (familySize.get(firstToken(id)) || 0) + 1);
+export const publicFamily = (id: string) =>
+  (familySize.get(firstToken(id)) || 0) >= 3 ? firstToken(id) : "Other";
+const natural = new Intl.Collator("en", { numeric: true });
+export const publicFamilies = [...new Set([...counts.keys()].map(publicFamily))].sort(
+  (a, b) =>
+    (a === "Other" ? 1 : 0) - (b === "Other" ? 1 : 0) ||
+    [...counts.keys()].filter((id) => publicFamily(id) === b).length -
+      [...counts.keys()].filter((id) => publicFamily(id) === a).length,
+);
+const publicOrder = [...counts.keys()].sort(
+  (a, b) =>
+    publicFamilies.indexOf(publicFamily(a)) - publicFamilies.indexOf(publicFamily(b)) ||
+    natural.compare(a, b),
+);
+const FAMILY_GAP = 3; // vagas vazias entre familias
+const publicSlots = publicOrder.length + FAMILY_GAP * publicFamilies.length;
+const publicAngle = new Map(
+  publicOrder.map((id, i) => [
+    id,
+    ((i + FAMILY_GAP * publicFamilies.indexOf(publicFamily(id))) / publicSlots) * Math.PI * 2 - Math.PI / 2 - 0.4, // giro leve: rotulos de familia longe do topo e da base
+  ]),
+);
+export const familyAngle = new Map(
+  publicFamilies.map((f) => {
+    const a = publicOrder.filter((id) => publicFamily(id) === f).map((id) => publicAngle.get(id)!);
+    return [f, (a[0] + a[a.length - 1]) / 2];
+  }),
+);
 export const nodes: Node[] = raw.nodes.map((n) => ({
   ...n,
   mixed: 0,
@@ -82,7 +115,7 @@ const baseLeaves = new Map(base.leaves().map((n) => [n.data.name, n])),
 nodes.forEach((n, i) => {
   n.angle =
     n.category === "PUB"
-      ? (topPublic.indexOf(n.id) / 40) * Math.PI * 2 - Math.PI / 2
+      ? publicAngle.get(n.id)!
       : baseLeaves.get(n.id)!.x! - Math.PI / 2;
   n.mixed = mixedLeaves.get(n.id)!.x! - Math.PI / 2;
 });
@@ -106,6 +139,8 @@ export const edges: Edge[] = [
     const id = leaf ? byId.get(p.data.name)! : -1;
     let a = p.x! - Math.PI / 2;
     if (id >= 0) a = nodes[id].angle;
+    else if (p.data.name === "PUB" || p.data.name.startsWith("PUB/"))
+      a = familyAngle.get(publicFamily(e.target))!; // o feixe publico converge na familia
     else {
       const b = base.descendants().find((b) => b.data.name === p.data.name);
       if (b) a = b.x! - Math.PI / 2;

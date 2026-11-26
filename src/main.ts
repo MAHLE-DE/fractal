@@ -6,7 +6,8 @@ import {
   palette,
   raw,
   fold,
-  topPublic,
+  familyAngle,
+  publicFamily,
   base,
 } from "./model";
 import {
@@ -215,10 +216,6 @@ function finish(id: string) {
 }
 function focus(id: string) {
   if (!byId.has(id)) return;
-  if (nodes[byId.get(id)!].category === "PUB" && !topPublic.includes(id)) {
-    showPublic(id);
-    return;
-  }
   skipOpening();
   pending = id;
   $("#results").hidden = true;
@@ -511,15 +508,26 @@ canvas.addEventListener(
   { passive: false },
 );
 const ringCount = nodes.filter((n) => n.category !== "PUB").length + 25;
+const ringGap = new Float32Array(nodes.length);
+for (const ring of [nodes.filter((n) => n.category !== "PUB"), nodes.filter((n) => n.category === "PUB")]) {
+  const order = ring.map((n) => byId.get(n.id)!).sort((a, b) => nodes[a].angle - nodes[b].angle);
+  order.forEach((id, k) => {
+    const turn = (d: number) => ((d % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const prev = turn(nodes[id].angle - nodes[order[(k - 1 + order.length) % order.length]].angle);
+    const next = turn(nodes[order[(k + 1) % order.length]].angle - nodes[id].angle);
+    ringGap[id] = Math.min(prev, next);
+  });
+}
 function cellSpacing() {
   return (2 * Math.PI * 0.35 * innerHeight * state.zoom) / ringCount;
 }
 function cellRadius(i: number) {
   const n = nodes[i];
-  const base = 1.3 + Math.sqrt(n.incoming) * 0.7;
+  const w = n.category === "PUB" ? 1 : n.incoming; // publicas: todas do mesmo tamanho
+  const base = n.category === "PUB" ? 1.8 : 1.3 + Math.sqrt(w) * 0.7;
   const z = Math.min(1, Math.max(0, (state.zoom - 3) / 10));
   const scale = Math.min((innerHeight * Math.min(devicePixelRatio, 1.25)) / 1000, 1.5) / Math.min(devicePixelRatio, 1.25);
-  const big = Math.min(34, Math.max(6, ((2 * Math.PI * 0.35 * 1000 * state.zoom) / ringCount) * 0.2 + Math.sqrt(n.incoming) * 0.8));
+  const big = Math.min(34, Math.max(6, ((2 * Math.PI * 0.35 * 1000 * state.zoom) / ringCount) * 0.2 + Math.sqrt(w) * 0.8));
   return (base * (1 - z) + big * z) * scale;
 }
 const labelCanvas = $<HTMLCanvasElement>("#labels"),
@@ -652,7 +660,7 @@ function drawFocusContext(t: number, stageWidth: number) {
     mini.arc(110, 127, 94.4, 0, Math.PI * 2);
     mini.stroke();
   }
-  for (let i = 0; i < nodes.length && nodes[i].category !== "PUB"; i++) {
+  for (let i = 0; i < nodes.length; i++) {
     const p = worldPoint(i, t);
     mini.fillStyle = palette[nodes[i].category];
     mini.fillRect(110 + p[0] * 80, 127 - p[1] * 80, 1.3, 1.3);
@@ -661,12 +669,6 @@ function drawFocusContext(t: number, stageWidth: number) {
   for (const { e, i } of links) {
     const target = e.source === id ? e.target : e.source,
       other = byId.get(target)!;
-    if (
-      nodes[other].category === "PUB" &&
-      state.mix < 0.5 &&
-      !topPublic.includes(target)
-    )
-      continue;
     const hovered = i === state.hover;
     const points = focusCurve(i);
     mini.strokeStyle =
@@ -718,7 +720,7 @@ function drawFocusContext(t: number, stageWidth: number) {
   mini.fillStyle = state.light ? "#213954" : "#e7f0fc";
   mini.font = "700 11px 'Segoe UI', sans-serif";
   mini.textAlign = "center";
-  mini.fillText(nodes[marker].id, 110, 226);
+  mini.fillText(nodes[marker].id, 110, 238);
   // Legenda de direcao dentro do mini-mapa (nao sobrepoe o palco).
   mini.font = "600 10.5px 'Segoe UI', sans-serif";
   mini.textAlign = "left";
@@ -729,9 +731,9 @@ function drawFocusContext(t: number, stageWidth: number) {
   legend.forEach(([label, color], k) => {
     const x = 24 + k * 96;
     mini.fillStyle = color;
-    mini.fillRect(x, 251, 16, 3);
+    mini.fillRect(x, 255, 16, 3);
     mini.fillStyle = state.light ? "#213954" : "#c9d7e7";
-    mini.fillText(label, x + 22, 256);
+    mini.fillText(label, x + 22, 260);
   });
   const unique = [...new Map(offscreen.map((x) => [x.id, x])).values()];
   const key = unique.map((x) => x.id + ":" + x.edge).join("|");
@@ -827,17 +829,29 @@ setOverlay((t) => {
       ctx.fillStyle = labelColor(cat);
       ctx.fillText(`${cat} ${leaves.length}`, x, y);
     }
+    // Familias do anel publico (ISO, DIN, ASTM...), por fora do anel externo.
+    ctx.font = "600 11px 'Segoe UI', sans-serif";
+    ctx.fillStyle = state.light ? "#45607c" : "#8ea2ba";
+    for (const [family, angle] of familyAngle) {
+      const count = nodes.filter((n) => n.category === "PUB" && publicFamily(n.id) === family).length;
+      if (count < 5) continue;
+      const a = angle + state.rotation,
+        r = innerHeight * 0.35 * 1.18 * state.zoom + 26;
+      const x = stageWidth / 2 + Math.cos(a) * r,
+        y = innerHeight / 2 - 0.35 * (state.zoom * state.anchor - 1) * innerHeight - Math.sin(a) * r;
+      if (state.focus >= 0 && y > innerHeight - 145) continue;
+      if (y < 80 || placed.some((p) => Math.hypot(x - p.x, y - p.y) < 36)) continue;
+      ctx.textAlign = Math.cos(a) > 0.25 ? "left" : Math.cos(a) < -0.25 ? "right" : "center";
+      ctx.fillText(`${family} ${count}`, x, y + 4);
+    }
   } else if (state.zoom >= 6) {
     const hoverEdge = state.hover >= 0 ? edges[state.hover] : null;
-    // Celulas visiveis ordenadas na horizontal: cada rotulo usa so o espaco ate as vizinhas (sem sobreposicao).
     const visible: { i: number; x: number; y: number }[] = [];
     nodes.forEach((n, i) => {
-      if (n.category === "PUB") return;
       const p = screenPosition(i, t);
       if (p.x < -80 || p.x > stageWidth + 80 || p.y < 110 || p.y > innerHeight - 30) return;
       visible.push({ i, x: p.x, y: p.y });
     });
-    visible.sort((a, b) => a.x - b.x);
     const wrap = (text: string, width: number) => {
       const words = text.split(" ");
       const lines: string[] = [];
@@ -857,24 +871,29 @@ setOverlay((t) => {
       }
       return lines;
     };
-    visible.forEach((v, k) => {
+    // Espaco de cada rotulo vem da distancia FIXA ate as vizinhas no anel (nao da posicao animada),
+    // e o rotulo aparece/some com fade: nada pisca durante o movimento continuo ou a rolagem.
+    visible.forEach((v) => {
       const n = nodes[v.i];
-      const gapLeft = k ? v.x - visible[k - 1].x : 999;
-      const gapRight = k < visible.length - 1 ? visible[k + 1].x - v.x : 999;
-      const room = Math.min(160, Math.min(gapLeft, gapRight) - 10);
-      if (room < 34) return;
+      const room = Math.min(160, ringGap[v.i] * 0.35 * innerHeight * state.zoom * n.radius - 16);
+      const fade = Math.min(1, Math.max(0, (room - 30) / 14));
+      if (fade <= 0) return;
       const r = cellRadius(v.i);
       const focused = v.i === state.focus || v.i === state.transitionTarget;
       const hot = focused || (!!hoverEdge && (hoverEdge.source === n.id || hoverEdge.target === n.id));
+      ctx.globalAlpha = focused ? 1 : fade;
       ctx.textAlign = "center";
       ctx.font = `${hot ? 700 : 600} ${focused ? 14 : 12}px 'Segoe UI', sans-serif`;
       ctx.fillStyle = focused ? (state.light ? "#0b213c" : "#ffffff") : labelColor(n.category);
-      ctx.fillText(n.id, v.x, v.y + r + 17, room);
-      if (state.zoom >= 18 && n.title && room >= 64) {
+      ctx.fillText(n.id, v.x, v.y + r + 17, Math.max(room, 40));
+      const titleFade = Math.min(1, Math.max(0, (room - 60) / 14)) * Math.min(1, Math.max(0, (state.zoom - 16) / 4));
+      if (titleFade > 0 && n.title && n.category !== "PUB") {
+        ctx.globalAlpha = titleFade;
         ctx.font = "400 11px 'Segoe UI', sans-serif";
         ctx.fillStyle = state.light ? "#3d556f" : "#a9bbcf";
         wrap(n.title, room).forEach((l, q) => ctx.fillText(l, v.x, v.y + r + 33 + q * 14, room));
       }
+      ctx.globalAlpha = 1;
     });
   }
   if (state.focus >= 0 && state.zoom < 3) {
@@ -886,8 +905,7 @@ setOverlay((t) => {
     nodes.forEach((n, i) => {
       if (
         n.category !== "PUB" ||
-        !cited.has(n.id) ||
-        (state.mix < 0.5 && !topPublic.includes(n.id))
+        !cited.has(n.id)
       )
         return;
       const p = screenPosition(i, t);
