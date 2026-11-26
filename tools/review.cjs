@@ -196,6 +196,7 @@ let activeBrowser;
   await page.screenshot({ path: `${dir}/16-public-details.png` });
   await page.evaluate(() => window.cascade.focus("MATL-686"));
   await page.waitForTimeout(2600);
+  await page.waitForFunction(() => window.cascade.current === "MATL-686" && document.querySelector("#open-pdf"));
   const opened = await page.evaluate(() => {
     let target = "";
     const original = window.open;

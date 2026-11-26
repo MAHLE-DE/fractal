@@ -29,6 +29,25 @@ const esc = (s: string) =>
       ]!,
   );
 const PANEL = 360;
+// Ponte com o app Windows (WebView2). No navegador comum, "desktop" e falso e nada muda.
+const webview = (window as any).chrome?.webview;
+const desktop = !!webview;
+const hostWaiting = new Map<string, { ok: (v: unknown) => void; fail: (e: Error) => void }>();
+let hostSeq = 0;
+webview?.addEventListener("message", (e: any) => {
+  const m = e.data;
+  const w = hostWaiting.get(m?.id);
+  if (!w) return;
+  hostWaiting.delete(m.id);
+  m.ok ? w.ok(m.data) : w.fail(new Error(m.error?.message || "Host error"));
+});
+function hostCall(type: string, payload: unknown) {
+  return new Promise<any>((ok, fail) => {
+    const id = String(++hostSeq);
+    hostWaiting.set(id, { ok, fail });
+    webview.postMessage({ id, type, payload });
+  });
+}
 const FOCUS_ZOOM = 34;
 let current = "",
   trail: string[] = [],
@@ -41,7 +60,6 @@ const panel = $("#panel");
 const panelCache = new Map<string, DocumentFragment>();
 let panelId = "";
 $("#date").textContent = `Valid-Documents · ${raw.meta.validDocuments}`;
-$("#opening-count").textContent = `${nodes.filter((n) => n.category !== "PUB").length} standards · ${raw.edges.length} citations`;
 function toast(text: string) {
   $("#toast").textContent = text;
   gsap.to("#toast", { opacity: 1, duration: 0.2 });
@@ -82,7 +100,7 @@ function renderPanel(id: string) {
   while (panelCache.size > 8)
     panelCache.delete(panelCache.keys().next().value!);
   const n = nodes[byId.get(id)!];
-  panel.innerHTML = `<div class="eyebrow"><small>STANDARD IN FOCUS</small><span class="chip" style="color:${palette[n.category]}">${n.category}</span></div><h2>${esc(id)}</h2><p class="card-title">${esc(n.title)}</p><p class="previous">${(n as { finalLegacy?: boolean }).finalLegacy ? "Final standard · no new-format code" : esc(n.previous)}${n.language ? " · " + n.language.toUpperCase() : ""}</p>${n.file ? '<button class="open" id="open-pdf">Open PDF ↗</button>' : ""}`;
+  panel.innerHTML = `<div class="eyebrow"><small>STANDARD IN FOCUS</small><span class="chip" style="color:${palette[n.category]}">${n.category}</span></div><h2>${esc(id)}</h2><p class="card-title">${esc(n.title)}</p><p class="previous">${(n as { finalLegacy?: boolean }).finalLegacy ? "Final standard · no new-format code" : esc(n.previous)}${n.language ? " · " + n.language.toUpperCase() : ""}</p>${n.category !== "PUB" && (desktop || n.file) ? `<button class="open" id="open-pdf"${desktop ? " disabled" : ""}>${desktop ? "Looking for the document…" : "Open PDF ↗"}</button><p class="doc-note" id="doc-note"></p>` : ""}`;
   const sections = [
     [
       "Requires",
@@ -163,7 +181,26 @@ function renderPanel(id: string) {
     document.body.classList.add("panel-open");
   panel.scrollTop = 0;
   const open = $<HTMLButtonElement>("#open-pdf");
-  if (open)
+  if (open && desktop) {
+    // App instalado: o host procura o arquivo na pasta configurada em config/loom.config.json.
+    const request = { id, previous: n.previous, file: n.file, aliases: n.aliases };
+    hostCall("documents.find", request).then((found: any) => {
+      if (current !== id && pending !== id) return;
+      const note = $("#doc-note");
+      if (found?.found) {
+        open.disabled = false;
+        open.textContent = "Open document ↗";
+        open.title = found.path;
+        note.textContent = found.name;
+        open.onclick = () =>
+          hostCall("documents.open", request).catch((e) => toast(String(e.message || e)));
+      } else {
+        open.textContent = found?.ready === false ? "Indexing documents folder…" : "Document not found";
+        note.textContent = found?.message || "";
+        if (found?.ready === false) setTimeout(() => current === id && renderPanel(id), 1500);
+      }
+    });
+  } else if (open)
     open.onclick = () => {
       const folder =
         localStorage.getItem("cascade-documents-root") ||
@@ -426,7 +463,7 @@ function skipOpening() {
   state.opening = 1;
   gsap.killTweensOf(openAnimation);
   $("#opening").style.opacity = "0";
-  setTimeout(() => ($("#opening").hidden = true), 400);
+  setTimeout(() => ($("#opening").hidden = true), 950);
 }
 const openAnimation = { value: 0 };
 gsap.to(openAnimation, {
@@ -436,7 +473,6 @@ gsap.to(openAnimation, {
   onUpdate: () => (state.opening = openAnimation.value),
   onComplete: () => skipOpening(),
 });
-$("#skip").onclick = skipOpening;
 canvas.onclick = (e) => {
   if (dragged) {
     dragged = false;
@@ -990,6 +1026,7 @@ $("#legend")
       }),
   );
 (window as any).cascade = {
+  hostCall: (type: string, payload: unknown) => (desktop ? hostCall(type, payload) : Promise.reject(new Error("not desktop"))),
   focus,
   overview,
   skipOpening,

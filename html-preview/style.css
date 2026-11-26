@@ -112,11 +112,11 @@ footer > div { display: flex; align-items: center; gap: 12px; pointer-events: au
 body.light #overview { background: var(--white); border-color: var(--border); color: var(--text); }
 footer > div:last-child span { font-size: 11px; }
 
-#opening { position: absolute; top: 38%; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; width: 640px; max-width: 90vw; transition: opacity .4s; color: var(--stage-ink); }
-#opening small { font-size: 11px; font-weight: 600; letter-spacing: 1.4px; color: var(--stage-muted); }
-#opening h2 { font-size: 34px; margin: 10px 0 8px; }
-#opening p { color: var(--stage-muted); margin: 0; }
-#opening button { pointer-events: auto; margin-top: 16px; background: #1a2c45; border-color: #2c4262; color: #d6e3f2; }
+/* Abertura: so a palavra "Loom." enquanto o anel se tece. */
+@font-face { font-family: LoomWordmark; src: url("./fonts/loom-wordmark.woff2") format("woff2"); font-weight: 300; }
+#opening { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 3; transition: opacity .9s ease; }
+#opening .wordmark { font: 300 clamp(96px, 13vw, 190px)/1 LoomWordmark, "Palatino Linotype", Georgia, serif; color: #f2f6fb; letter-spacing: .02em; text-shadow: 0 0 40px #0b213ccc, 0 2px 30px #000a; animation: loom-in 1.6s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes loom-in { from { opacity: 0; transform: translateY(14px) scale(.97); letter-spacing: .12em; filter: blur(6px); } to { opacity: 1; transform: none; letter-spacing: .02em; filter: none; } }
 #toast { position: absolute; top: calc(var(--header-h) + 14px); left: 50%; transform: translateX(-50%); padding: 10px 16px; background: var(--white); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 30px #0b213c33; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 8; }
 /* ---------- Mini-mapa e rótulos de borda ---------- */
 #focus-inset { position: fixed; left: 24px; top: calc(var(--header-h) + 64px); width: 220px; height: 270px; border: 1px solid #263a55; border-radius: 10px; background: #12233ae6; pointer-events: none; }
@@ -136,3 +136,6 @@ body.light #edge-labels button { background: var(--white); border-color: var(--b
 body.light footer { color: #45607c; }
 body.light #legend button { filter: saturate(1.1) brightness(.6); }
 body.light #opening button { background: var(--white); border-color: #c9d6e3; color: var(--text); }
+#panel .open:disabled { background: var(--surface); border-color: var(--border); color: #6f8297; cursor: default; }
+#panel .doc-note { margin: -12px 0 16px; font-size: 11.5px; color: #4f6680; word-break: break-all; }
+#panel .doc-note:empty { display: none; }

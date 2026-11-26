@@ -1,2 +1,5 @@
 # Bundle gerado: revisão textual em src/; inclui evidência normativa literal.
 html-preview/cascade.js -diff
+distribution/**/*.zip binary
+*.ico binary
+*.woff2 binary

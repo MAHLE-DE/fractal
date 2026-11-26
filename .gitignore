@@ -1,2 +1,4 @@
 node_modules/
 .tmp/
+host/bin/
+host/obj/

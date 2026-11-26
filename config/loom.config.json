@@ -1,0 +1,5 @@
+{
+  "documentsFolder": "..\\..\\link_normas\\05_DOCUMENTS",
+  "searchSubfolders": true,
+  "_help": "documentsFolder = pasta com os PDF/DOCX das normas (subpastas incluidas). Caminho absoluto, ex. C:\\Normas, ou relativo a esta pasta config. No JSON, cada barra invertida e escrita dupla. Salve e reabra o LOOM."
+}
