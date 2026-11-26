@@ -1,4 +1,4 @@
-/* Standards Cascade: interface sólida no padrão do app irmão Fractal.
+/* LOOM (Standards Loom): interface sólida no padrão do app irmão Fractal.
    Cabeçalho e painel claros e sólidos; só a área do anel é escura. Segoe UI em tudo. */
 @font-face { font-family: Mono; src: url("./fonts/mono.woff2"); }
 :root {

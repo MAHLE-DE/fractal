@@ -11,5 +11,5 @@ def compare(first,second,labels,target):
         out.paste(Image.open(image).convert('RGB').resize((1600,1000)),(x*1600,48))
         draw.text((x*1600+30,12),label,font=font,fill='#d6e7ff')
     out.save(target)
-compare(media/'ref-atlas-feixes.png',review/'01-overview.png',('Atlas — referência Feixes','Standards Cascade — 595 normas / 943 fibras'),review/'01-compare.png')
+compare(media/'ref-atlas-feixes.png',review/'01-overview.png',('Atlas — referência Feixes','LOOM — 595 normas / 943 fibras'),review/'01-compare.png')
 compare(review/'before.png',review/'01-overview.png',('T18 — Bézier única de grau 6, raiz forçada','T19 — spline cúbica, caminho pelo ancestral comum'),review/'13-cut-paths-before-after.png')
